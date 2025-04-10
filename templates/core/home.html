@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Início - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="px-4 py-5 my-5 text-center">
+    <h1 class="display-5 fw-bold text-primary">Sistema de Assinaturas</h1>
+    <div class="col-lg-6 mx-auto">
+        <p class="lead mb-4">
+            Bem-vindo ao Sistema de Assinaturas de Termos de Responsabilidade.
+            Gerencie seus documentos e assinaturas de forma simples e segura.
+        </p>
+        {% if user.is_authenticated %}
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <a href="{% url 'core:dashboard' %}" class="btn btn-primary btn-lg px-4 gap-3">
+                    <i class="fas fa-tachometer-alt"></i> Acessar Dashboard
+                </a>
+                <a href="{% url 'documents:termo_list' %}" class="btn btn-outline-primary btn-lg px-4">
+                    <i class="fas fa-file-signature"></i> Ver Meus Termos
+                </a>
+            </div>
+        {% else %}
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <a href="{% url 'users:login' %}" class="btn btn-primary btn-lg px-4 gap-3">
+                    <i class="fas fa-sign-in-alt"></i> Entrar no Sistema
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="container px-4 py-5">
+    <h2 class="pb-2 border-bottom">Principais Funcionalidades</h2>
+    <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
+        <div class="col d-flex align-items-start">
+            <div class="icon-square text-bg-light d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
+                <i class="fas fa-file-signature text-primary"></i>
+            </div>
+            <div>
+                <h3 class="fs-2">Assinatura Digital</h3>
+                <p>Assine documentos de forma digital e segura, com registro de data, hora e IP.</p>
+            </div>
+        </div>
+        <div class="col d-flex align-items-start">
+            <div class="icon-square text-bg-light d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
+                <i class="fas fa-laptop text-primary"></i>
+            </div>
+            <div>
+                <h3 class="fs-2">Gestão de Equipamentos</h3>
+                <p>Controle completo dos equipamentos da empresa e seus responsáveis.</p>
+            </div>
+        </div>
+        <div class="col d-flex align-items-start">
+            <div class="icon-square text-bg-light d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
+                <i class="fas fa-history text-primary"></i>
+            </div>
+            <div>
+                <h3 class="fs-2">Histórico Completo</h3>
+                <p>Acesso ao histórico de documentos e assinaturas com download em PDF.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

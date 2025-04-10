@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Detalhes do Modelo de Documento - {{ block.super }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        margin: 2cm;
+    }
+    .header {
+        text-align: center;
+        margin-bottom: 2cm;
+    }
+    .logo {
+        max-width: 100px;
+        margin-bottom: 1cm;
+    }
+    .confidential {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        color: #666;
+        font-size: 12px;
+    }
+    .title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 1cm;
+        text-align: center;
+    }
+    .content {
+        text-align: justify;
+        margin-bottom: 1cm;
+    }
+    .equipment-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1cm 0;
+    }
+    .equipment-table th, .equipment-table td {
+        border: 1px solid #000;
+        padding: 8px;
+        text-align: left;
+    }
+    .equipment-table th {
+        background-color: #f5f5f5;
+    }
+    .signature-block {
+        margin-top: 2cm;
+    }
+    .signature-line {
+        border-top: 1px solid #000;
+        width: 300px;
+        margin: 1cm 0 0.2cm 0;
+    }
+    .signature-name {
+        width: 300px;
+        text-align: center;
+    }
+    .witness-block {
+        margin-top: 2cm;
+        display: flex;
+        justify-content: space-between;
+    }
+    .witness {
+        width: 45%;
+    }
+    .footer-logo {
+        margin-top: 3cm;
+        text-align: center;
+    }
+    .footer-logo img {
+        max-width: 150px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="confidential">Este documento é confidencial</div>
+
+<div class="header">
+    <img src="{% static 'images/v8_logo.png' %}" alt="V8 Logo" class="logo">
+</div>
+
+<div class="title">
+    TERMO DE RESPONSABILIDADE PELA GUARDA E USO DE EQUIPAMENTO DE TRABALHO
+</div>
+
+<div class="content">
+    <p>Eu, [Nome do Beneficiário], portador da cédula de identidade RG nº [RG], inscrito no CPF sob nº [CPF], residente e domiciliado na Cidade de [Cidade], Estado de [Estado], no [Endereço], Bairro: [Bairro], CEP: [CEP], declaro expressamente que recebi da empresa V8 Consulting S.A., inscrita no CNPJ Nº 21.147.341/0001-64, com sede na Cidade de São Paulo, Estado de São Paulo, na Avenida Roque Petroni Junior nº 850, 8º andar, conjuntos 81 a 83, Jardim das Acácias, CEP 04707-000, neste ato devidamente representada na forma de seu Estatuto Social ("V8 TECH"), a título de comodato, os equipamentos de propriedade da V8 abaixo listados:</p>
+
+    <table class="equipment-table">
+        <thead>
+            <tr>
+                <th>Equipamento N/S</th>
+                <th>Descrição</th>
+                <th>Valor</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for equipamento in modelo.equipamentos.all %}
+            <tr>
+                <td>{{ equipamento.numero_serie }}</td>
+                <td>{{ equipamento.descricao }}</td>
+                <td>R$ {{ equipamento.valor|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3">Nenhum equipamento listado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p>Desta forma, comprometo-me a mantê-los e devolvê-los quando solicitado em perfeito estado de conservação, concordando e obrigando-se com os termos e condições a seguir:</p>
+
+    {{ modelo.conteudo|safe }}
+
+    <p>Declaro que li, entendi e estou de acordo com todos os termos e condições deste termo de responsabilidade, concordando integralmente com as condições estabelecidas.</p>
+</div>
+
+<div class="signature-block">
+    <p>São Paulo, {{ modelo.data_criacao|date:"d/m/Y" }}</p>
+
+    <div style="display: flex; justify-content: space-between; margin-top: 2cm;">
+        <div style="width: 45%;">
+            <div class="signature-line"></div>
+            <div class="signature-name">V8 TECH<br>Flávio Vinicius</div>
+        </div>
+        <div style="width: 45%;">
+            <div class="signature-line"></div>
+            <div class="signature-name">BENEFICIÁRIO</div>
+        </div>
+    </div>
+</div>
+
+<div class="witness-block">
+    <div class="witness">
+        <p>Testemunhas:</p>
+        <div class="signature-line"></div>
+        <div class="signature-name">
+            Nome: Flávio Vinicius<br>
+            CPF: 368.408.098.54
+        </div>
+    </div>
+    <div class="witness">
+        <p>&nbsp;</p>
+        <div class="signature-line"></div>
+        <div class="signature-name">
+            Nome: ___________________________<br>
+            CPF: ____________________________
+        </div>
+    </div>
+</div>
+
+<div class="footer-logo">
+    <img src="{% static 'images/v8tech_logo.png' %}" alt="V8.TECH">
+</div>
+{% endblock %}

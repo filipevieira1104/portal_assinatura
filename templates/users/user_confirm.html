@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ action_title }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">{{ action_title }}</h4>
+            </div>
+            <div class="card-body">
+                <p class="mb-4">{{ action_message }}</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="text-end">
+                        <a href="{% url 'users:user_profile' user.id %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn {% if action == 'activate' %}btn-success{% else %}btn-danger{% endif %}">
+                            <i class="fas {% if action == 'activate' %}fa-user-check{% else %}fa-user-times{% endif %}"></i>
+                            Confirmar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

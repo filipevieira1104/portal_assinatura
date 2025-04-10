@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Equipamentos - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Lista de Equipamentos</h4>
+        <a href="{% url 'documents:equipamento_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Novo Equipamento
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Marca/Modelo</th>
+                        <th>Número de Série</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for equipamento in equipamentos %}
+                    <tr>
+                        <td>{{ equipamento.get_tipo_display }}</td>
+                        <td>{{ equipamento.marca }} / {{ equipamento.modelo }}</td>
+                        <td>{{ equipamento.numero_serie }}</td>
+                        <td>{{ equipamento.get_status_display }}</td>
+                        <td>
+                            <a href="{% url 'documents:equipamento_detail' equipamento.id %}" class="btn btn-sm btn-info">
+                                <i class="fas fa-eye"></i> Ver
+                            </a>
+                            <a href="{% url 'documents:equipamento_update' equipamento.id %}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i> Editar
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">Nenhum equipamento encontrado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Termo de Responsabilidade</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 2cm;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2cm;
+        }
+        .logo {
+            max-width: 200px;
+            margin-bottom: 1cm;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 1cm;
+        }
+        .section {
+            margin-bottom: 1cm;
+        }
+        .section-title {
+            font-weight: bold;
+            margin-bottom: 0.5cm;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1cm;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f5f5f5;
+            width: 30%;
+        }
+        .signature {
+            margin-top: 3cm;
+        }
+        .signature-line {
+            border-top: 1px solid #000;
+            width: 300px;
+            margin-top: 50px;
+        }
+        .footer {
+            margin-top: 2cm;
+            text-align: center;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="{{ logo_url }}" alt="Logo" class="logo">
+        <div class="title">TERMO DE RESPONSABILIDADE</div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">1. INFORMAÇÕES DO EQUIPAMENTO</div>
+        <table>
+            <tr>
+                <th>Tipo:</th>
+                <td>{{ equipment.get_equipment_type_display }}</td>
+            </tr>
+            <tr>
+                <th>Marca/Modelo:</th>
+                <td>{{ equipment.brand_model }}</td>
+            </tr>
+            <tr>
+                <th>Número de Série:</th>
+                <td>{{ equipment.serial_number }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <div class="section-title">2. RESPONSÁVEL</div>
+        <table>
+            <tr>
+                <th>Nome:</th>
+                <td>{{ equipment.responsible.get_full_name }}</td>
+            </tr>
+            <tr>
+                <th>Email:</th>
+                <td>{{ equipment.responsible.email }}</td>
+            </tr>
+            <tr>
+                <th>Departamento:</th>
+                <td>{{ equipment.responsible.department }}</td>
+            </tr>
+            <tr>
+                <th>Cargo:</th>
+                <td>{{ equipment.responsible.position }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <div class="section-title">3. DECLARAÇÃO DE RESPONSABILIDADE</div>
+        <p>
+            Eu, <strong>{{ equipment.responsible.get_full_name }}</strong>, declaro que recebi o equipamento acima descrito e me comprometo a:
+        </p>
+        <ul>
+            <li>Utilizar o equipamento de forma adequada e responsável;</li>
+            <li>Manter o equipamento em bom estado de conservação;</li>
+            <li>Comunicar imediatamente qualquer problema ou dano ao equipamento;</li>
+            <li>Não emprestar o equipamento para terceiros;</li>
+            <li>Devolver o equipamento em perfeitas condições quando solicitado;</li>
+            <li>Arcar com os custos de manutenção ou substituição em caso de danos causados por uso inadequado.</li>
+        </ul>
+        <p>
+            Ao assinar este termo, declaro estar ciente das responsabilidades assumidas e das consequências do não cumprimento das condições estabelecidas.
+        </p>
+    </div>
+
+    <div class="signature">
+        <p>Data: {{ term.signed_at|date:"d/m/Y" }}</p>
+        <p>IP: {{ term.ip_address }}</p>
+        <div class="signature-line"></div>
+        <p>{{ equipment.responsible.get_full_name }}</p>
+    </div>
+
+    <div class="footer">
+        <p>Este documento foi gerado automaticamente pelo Sistema de Assinaturas.</p>
+        <p>Data de geração: {{ now|date:"d/m/Y H:i:s" }}</p>
+    </div>
+</body>
+</html> 

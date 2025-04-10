@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}Assinar Documento - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Assinar Documento</h4>
+        <a href="{% url 'documents:document_detail' document.id %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h5 class="mb-3">Informações do Documento</h5>
+                <table class="table">
+                    <tr>
+                        <th>Título:</th>
+                        <td>{{ document.title }}</td>
+                    </tr>
+                    <tr>
+                        <th>Tipo:</th>
+                        <td>{{ document.get_document_type_display }}</td>
+                    </tr>
+                    <tr>
+                        <th>Data de Criação:</th>
+                        <td>{{ document.created_at|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h5 class="mb-3">Arquivo</h5>
+                <div class="card">
+                    <div class="card-body">
+                        <p class="mb-3">
+                            <strong>Nome do arquivo:</strong> {{ document.file.name|split:"/"|last }}
+                        </p>
+                        <p class="mb-3">
+                            <strong>Tamanho:</strong> {{ document.file.size|filesizeformat }}
+                        </p>
+                        <a href="{{ document.file.url }}" class="btn btn-primary" target="_blank">
+                            <i class="fas fa-download"></i> Baixar Arquivo
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <h5 class="mb-3">Assinaturas Anteriores</h5>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Usuário</th>
+                                <th>Data/Hora</th>
+                                <th>IP</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for signature in document.signatures.all %}
+                            <tr>
+                                <td>{{ signature.user.get_full_name }}</td>
+                                <td>{{ signature.signed_at|date:"d/m/Y H:i:s" }}</td>
+                                <td>{{ signature.ip_address }}</td>
+                                <td>
+                                    <span class="badge bg-success">Assinado</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center">Nenhuma assinatura encontrada.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Ao assinar este documento, você concorda com todos os termos e condições nele estabelecidos.
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="text-end">
+                        <a href="{% url 'documents:document_detail' document.id %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-signature"></i> Assinar Documento
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

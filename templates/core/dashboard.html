@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2 class="h3 mb-0">Dashboard</h2>
+    </div>
+</div>
+
+{% if user.is_staff %}
+    <!-- Dashboard do Administrador -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card text-bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Total de Equipamentos</h5>
+                    <p class="card-text display-6">{{ total_equipamentos }}</p>
+                    <a href="{% url 'documents:equipamento_list' %}" class="btn btn-light btn-sm">Ver Detalhes</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Termos Assinados</h5>
+                    <p class="card-text display-6">{{ termos_assinados }}</p>
+                    <a href="{% url 'documents:termo_list' %}?status=ASSINADO" class="btn btn-light btn-sm">Ver Detalhes</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Termos Pendentes</h5>
+                    <p class="card-text display-6">{{ termos_pendentes }}</p>
+                    <a href="{% url 'documents:termo_list' %}?status=PENDENTE" class="btn btn-light btn-sm">Ver Detalhes</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">Total de Termos</h5>
+                    <p class="card-text display-6">{{ total_termos }}</p>
+                    <a href="{% url 'documents:termo_list' %}" class="btn btn-light btn-sm">Ver Detalhes</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Últimos Termos</h5>
+                    <a href="{% url 'documents:termo_list' %}" class="btn btn-primary btn-sm">Ver Todos</a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Colaborador</th>
+                                    <th>Status</th>
+                                    <th>Data</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for termo in ultimos_termos %}
+                                <tr>
+                                    <td>{{ termo.colaborador.get_full_name }}</td>
+                                    <td>
+                                        <span class="badge {% if termo.status == 'ASSINADO' %}bg-success{% elif termo.status == 'PENDENTE' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                            {{ termo.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ termo.data_envio|date:"d/m/Y" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center">Nenhum termo encontrado.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Equipamentos Recentes</h5>
+                    <a href="{% url 'documents:equipamento_list' %}" class="btn btn-primary btn-sm">Ver Todos</a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>Número de Série</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for equipamento in ultimos_equipamentos %}
+                                <tr>
+                                    <td>{{ equipamento.get_tipo_display }}</td>
+                                    <td>{{ equipamento.numero_serie }}</td>
+                                    <td>
+                                        <span class="badge {% if equipamento.status == 'DISPONIVEL' %}bg-success{% elif equipamento.status == 'EM_USO' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                            {{ equipamento.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center">Nenhum equipamento encontrado.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <!-- Dashboard do Colaborador -->
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Meus Termos Pendentes</h5>
+                </div>
+                <div class="card-body">
+                    {% if termos_pendentes %}
+                        <div class="list-group">
+                            {% for termo in termos_pendentes %}
+                                <a href="{% url 'documents:termo_detail' termo.uuid %}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ termo.modelo.titulo }}</h6>
+                                        <small>{{ termo.data_envio|date:"d/m/Y" }}</small>
+                                    </div>
+                                    <p class="mb-1">
+                                        Equipamentos: 
+                                        {% for item in termo.itemtermo_set.all %}
+                                            {{ item.equipamento.tipo }} {{ item.equipamento.marca }}{% if not forloop.last %}, {% endif %}
+                                        {% endfor %}
+                                    </p>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-center mb-0">Você não tem termos pendentes.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Meus Equipamentos</h5>
+                </div>
+                <div class="card-body">
+                    {% if meus_equipamentos %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Tipo</th>
+                                        <th>Marca/Modelo</th>
+                                        <th>Número de Série</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for equipamento in meus_equipamentos %}
+                                        <tr>
+                                            <td>{{ equipamento.get_tipo_display }}</td>
+                                            <td>{{ equipamento.marca }} {{ equipamento.modelo }}</td>
+                                            <td>{{ equipamento.numero_serie }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-center mb-0">Você não possui equipamentos registrados.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %} 

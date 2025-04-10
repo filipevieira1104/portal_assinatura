@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Excluir Equipamento - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Excluir Equipamento</h4>
+            </div>
+            <div class="card-body">
+                <p class="mb-4">Tem certeza que deseja excluir o equipamento "{{ equipment.brand_model }}"?</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="text-end">
+                        <a href="{% url 'equipment:equipment_detail' equipment.id %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Confirmar Exclusão
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

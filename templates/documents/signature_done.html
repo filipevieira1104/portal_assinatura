@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}Documento Assinado - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Documento Assinado</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i> O documento foi assinado com sucesso!
+                </div>
+                <div class="text-center">
+                    <a href="{% url 'documents:document_detail' document.id %}" class="btn btn-primary">
+                        <i class="fas fa-file-alt"></i> Ver Documento
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block title %}Meu Perfil - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Informações do Usuário</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>Nome:</strong> {{ profile_user.get_full_name }}</p>
+                    <p><strong>Email:</strong> {{ profile_user.email }}</p>
+                    <p><strong>Membro desde:</strong> {{ profile_user.date_joined|date:"d/m/Y" }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Termos Pendentes de Assinatura</h4>
+                </div>
+                <div class="card-body">
+                    {% if termos_pendentes %}
+                    <div class="list-group">
+                        {% for termo in termos_pendentes %}
+                        <a href="{% url 'documents:termo_detail' termo.uuid %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">Termo {{ termo.uuid }}</h5>
+                                <small>{{ termo.data_envio|date:"d/m/Y" }}</small>
+                            </div>
+                            <p class="mb-1">{{ termo.modelo.titulo }}</p>
+                            <small>Status: {{ termo.status }}</small>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p>Não há termos pendentes de assinatura.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Equipamentos Associados</h4>
+                </div>
+                <div class="card-body">
+                    {% if equipamentos %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>Marca/Modelo</th>
+                                    <th>Número de Série</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for equipamento in equipamentos %}
+                                <tr>
+                                    <td>{{ equipamento.get_tipo_display }}</td>
+                                    <td>{{ equipamento.marca }} {{ equipamento.modelo }}</td>
+                                    <td>{{ equipamento.numero_serie }}</td>
+                                    <td>{{ equipamento.get_status_display }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p>Não há equipamentos associados ao seu usuário.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h4>Histórico de Termos Assinados</h4>
+                </div>
+                <div class="card-body">
+                    {% if termos_assinados %}
+                    <div class="list-group">
+                        {% for termo in termos_assinados %}
+                        <a href="{% url 'documents:termo_detail' termo.uuid %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">Termo {{ termo.uuid }}</h5>
+                                <small>Assinado em {{ termo.data_assinatura|date:"d/m/Y" }}</small>
+                            </div>
+                            <p class="mb-1">{{ termo.modelo.titulo }}</p>
+                            <small>
+                                {% if termo.arquivo_pdf %}
+                                <a href="{% url 'documents:termo_download' termo.uuid %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-download"></i> Download PDF
+                                </a>
+                                {% endif %}
+                            </small>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p>Não há termos assinados no histórico.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

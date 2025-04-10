@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}Ajuda - Modelos de Documento - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h4>Ajuda - Modelos de Documento com Word</h4>
+        </div>
+        <div class="card-body">
+            <h5>Usando Arquivos Word como Modelos</h5>
+            <p>
+                O sistema permite criar modelos de documentos usando arquivos Word (.docx), que serão convertidos
+                em PDF durante a assinatura de termos de responsabilidade. Isso proporciona maior flexibilidade 
+                na formatação e layout dos documentos.
+            </p>
+            
+            <div class="alert alert-info">
+                <strong>Dica:</strong> Você pode usar o editor HTML para documentos simples ou fazer upload de
+                um arquivo Word para documentos mais complexos ou que exigem formatação especial.
+            </div>
+            
+            <h5 class="mt-4">Placeholders Disponíveis</h5>
+            <p>
+                Para personalizar o documento com informações do usuário e do termo, você pode inserir os 
+                seguintes placeholders em seu arquivo Word:
+            </p>
+            
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Placeholder</th>
+                            <th>Descrição</th>
+                            <th>Exemplo de Uso</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>${NOME}</code></td>
+                            <td>Nome completo do colaborador</td>
+                            <td>Eu, <code>${NOME}</code>, declaro que...</td>
+                        </tr>
+                        <tr>
+                            <td><code>${CPF}</code></td>
+                            <td>CPF do colaborador</td>
+                            <td>CPF: <code>${CPF}</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>${RG}</code></td>
+                            <td>RG do colaborador</td>
+                            <td>RG: <code>${RG}</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>${ENDERECO}</code></td>
+                            <td>Endereço completo do colaborador</td>
+                            <td>Residente em <code>${ENDERECO}</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>${CIDADE}</code></td>
+                            <td>Cidade do colaborador</td>
+                            <td>Cidade: <code>${CIDADE}</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>${ESTADO}</code></td>
+                            <td>Estado do colaborador</td>
+                            <td>Estado: <code>${ESTADO}</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>${CEP}</code></td>
+                            <td>CEP do colaborador</td>
+                            <td>CEP: <code>${CEP}</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>${DATA_ASSINATURA}</code></td>
+                            <td>Data da assinatura do termo</td>
+                            <td>Assinado em <code>${DATA_ASSINATURA}</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>${HASH_ASSINATURA}</code></td>
+                            <td>Hash de verificação da assinatura</td>
+                            <td>Código de verificação: <code>${HASH_ASSINATURA}</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <h5 class="mt-4">Exemplo de Uso</h5>
+            <p>
+                Você pode criar um documento Word com o seguinte conteúdo:
+            </p>
+            
+            <div class="border p-3 bg-light">
+                <h2 style="text-align: center;">TERMO DE RESPONSABILIDADE</h2>
+                <p>
+                    Eu, <strong>${NOME}</strong>, portador do RG nº <strong>${RG}</strong> e CPF nº <strong>${CPF}</strong>,
+                    residente em <strong>${ENDERECO}</strong>, declaro ter recebido os equipamentos listados abaixo
+                    para uso profissional, comprometendo-me a zelar por sua conservação e devolvê-los em perfeito estado.
+                </p>
+                
+                <p>
+                    [Tabela com os equipamentos será inserida automaticamente pelo sistema]
+                </p>
+                
+                <p>
+                    E, por ser verdade, firmo o presente termo.
+                </p>
+                
+                <p style="text-align: center; margin-top: 50px;">
+                    ${CIDADE}, ${DATA_ASSINATURA}
+                </p>
+                
+                <p style="text-align: center; margin-top: 50px;">
+                    ___________________________________________<br>
+                    ${NOME}<br>
+                    CPF: ${CPF}
+                </p>
+                
+                <p style="text-align: right; font-size: 10px; margin-top: 50px;">
+                    Código de verificação: ${HASH_ASSINATURA}
+                </p>
+            </div>
+            
+            <div class="alert alert-warning mt-4">
+                <strong>Importante:</strong> Certifique-se de que todos os placeholders estejam exatamente como mostrado,
+                incluindo os caracteres $ e {}. O sistema substituirá esses placeholders pelos valores reais durante a 
+                geração do PDF.
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="{% url 'documents:modelo_list' %}" class="btn btn-primary">Voltar para Lista de Modelos</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

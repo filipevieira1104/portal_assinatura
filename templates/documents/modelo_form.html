@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<style>
+    .or-separator {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 20px 0;
+    }
+    
+    .or-separator::before,
+    .or-separator::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid #ccc;
+    }
+    
+    .or-separator span {
+        padding: 0 10px;
+        color: #666;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h4>{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Modelo de Documento</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" id="documentoForm" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <div class="form-group">
+                            <label for="id_titulo">Título</label>
+                            <input type="text" name="titulo" id="id_titulo" class="form-control" value="{{ form.instance.titulo|default_if_none:'' }}" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="id_versao">Versão</label>
+                            <input type="text" name="versao" id="id_versao" class="form-control" value="{{ form.instance.versao|default_if_none:'' }}" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Editor TinyMCE para o conteúdo -->
+                <div class="form-group mb-3">
+                    <label for="id_conteudo">Conteúdo</label>
+                    <textarea name="conteudo" id="id_conteudo" class="form-control" rows="10">{{ form.instance.conteudo|default_if_none:'' }}</textarea>
+                </div>
+                
+                <div class="or-separator">
+                    <span>OU</span>
+                </div>
+                
+                <!-- Upload de arquivo Word -->
+                <div class="form-group mb-3">
+                    <label for="id_arquivo_word">Arquivo Word</label>
+                    <input type="file" name="arquivo_word" id="id_arquivo_word" class="form-control" accept=".docx">
+                    <small class="form-text text-muted">
+                        Se preferir, faça upload de um arquivo Word (.docx) em vez de usar o editor de texto acima.
+                        {% if form.instance.arquivo_word %}
+                        <br>Arquivo atual: <a href="{{ form.instance.arquivo_word.url }}" target="_blank">{{ form.instance.arquivo_word.name }}</a>
+                        {% endif %}
+                        <br><a href="/documentos/modelos/ajuda/" target="_blank">Consulte a ajuda sobre o uso de modelos Word</a>
+                    </small>
+                </div>
+
+                <div class="form-check mb-3">
+                    <input type="checkbox" name="ativo" id="id_ativo" class="form-check-input" {% if form.instance.ativo %}checked{% endif %}>
+                    <label class="form-check-label" for="id_ativo">Ativo</label>
+                </div>
+
+                <div class="text-end">
+                    <a href="{% url 'documents:modelo_list' %}" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if form.instance.pk %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Se já tiver um arquivo Word, mostrar uma mensagem
+        var arquivoWordInput = document.getElementById('id_arquivo_word');
+        var conteudoTextarea = document.getElementById('id_conteudo');
+        
+        {% if form.instance.arquivo_word %}
+        var arquivoAviso = document.createElement('div');
+        arquivoAviso.className = 'alert alert-info mt-2';
+        arquivoAviso.innerHTML = 'Este modelo já possui um arquivo Word. Se enviar um novo arquivo, ele substituirá o atual.';
+        arquivoWordInput.parentNode.appendChild(arquivoAviso);
+        {% endif %}
+    });
+</script>
+{% endif %}
+{% endblock %}

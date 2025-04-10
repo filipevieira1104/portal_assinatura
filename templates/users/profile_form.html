@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Editar Perfil - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Editar Perfil</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Informações Pessoais</h5>
+                            {{ form.first_name|crispy }}
+                            {{ form.last_name|crispy }}
+                            {{ form.email|crispy }}
+                            {{ form.telefone|crispy }}
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Endereço</h5>
+                            {{ form.endereco|crispy }}
+                            <div class="row">
+                                <div class="col-4">
+                                    {{ form.numero|crispy }}
+                                </div>
+                                <div class="col-8">
+                                    {{ form.complemento|crispy }}
+                                </div>
+                            </div>
+                            {{ form.bairro|crispy }}
+                            <div class="row">
+                                <div class="col-8">
+                                    {{ form.cidade|crispy }}
+                                </div>
+                                <div class="col-4">
+                                    {{ form.estado|crispy }}
+                                </div>
+                            </div>
+                            {{ form.cep|crispy }}
+                        </div>
+                    </div>
+                    <div class="text-end mt-3">
+                        <a href="{% url 'users:profile' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Salvar Alterações
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

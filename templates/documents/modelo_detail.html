@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalhes do Modelo de Documento - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Detalhes do Modelo de Documento</h4>
+        <div>
+            <a href="{% url 'documents:modelo_update' modelo.pk %}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Editar
+            </a>
+            <a href="{% url 'documents:modelo_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <table class="table">
+            <tr>
+                <th>Título:</th>
+                <td>{{ modelo.titulo }}</td>
+            </tr>
+            <tr>
+                <th>Versão:</th>
+                <td>{{ modelo.versao }}</td>
+            </tr>
+            <tr>
+                <th>Ativo:</th>
+                <td>{{ modelo.ativo|yesno:"Sim,Não" }}</td>
+            </tr>
+            <tr>
+                <th>Data de Criação:</th>
+                <td>{{ modelo.data_criacao|date:"d/m/Y H:i" }}</td>
+            </tr>
+            <tr>
+                <th>Última Modificação:</th>
+                <td>{{ modelo.data_modificacao|date:"d/m/Y H:i" }}</td>
+            </tr>
+            {% if modelo.arquivo_word %}
+            <tr>
+                <th>Arquivo Word:</th>
+                <td>
+                    <a href="{{ modelo.arquivo_word.url }}" class="btn btn-sm btn-primary" download>
+                        <i class="fas fa-download"></i> Baixar arquivo Word
+                    </a>
+                </td>
+            </tr>
+            {% endif %}
+        </table>
+        
+        {% if modelo.conteudo %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Conteúdo do Modelo</h5>
+            </div>
+            <div class="card-body">
+                <div class="border p-3">
+                    {{ modelo.conteudo|safe }}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

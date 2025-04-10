@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ equipment.brand_model }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">{{ equipment.brand_model }}</h4>
+        <div>
+            <a href="{% url 'equipment:equipment_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+            {% if perms.equipment.change_equipment %}
+            <a href="{% url 'equipment:equipment_update' equipment.id %}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Editar
+            </a>
+            {% endif %}
+            {% if perms.equipment.delete_equipment %}
+            <a href="{% url 'equipment:equipment_delete' equipment.id %}" class="btn btn-danger">
+                <i class="fas fa-trash"></i> Excluir
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h5 class="mb-3">Informações do Equipamento</h5>
+                <table class="table">
+                    <tr>
+                        <th>Tipo:</th>
+                        <td>{{ equipment.get_equipment_type_display }}</td>
+                    </tr>
+                    <tr>
+                        <th>Marca/Modelo:</th>
+                        <td>{{ equipment.brand_model }}</td>
+                    </tr>
+                    <tr>
+                        <th>Número de Série:</th>
+                        <td>{{ equipment.serial_number }}</td>
+                    </tr>
+                    <tr>
+                        <th>Status:</th>
+                        <td>
+                            {% if equipment.is_active %}
+                            <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                            <span class="badge bg-danger">Inativo</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Data de Cadastro:</th>
+                        <td>{{ equipment.created_at|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Última Atualização:</th>
+                        <td>{{ equipment.updated_at|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h5 class="mb-3">Responsável</h5>
+                <table class="table">
+                    <tr>
+                        <th>Nome:</th>
+                        <td>{{ equipment.responsible.get_full_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Email:</th>
+                        <td>{{ equipment.responsible.email }}</td>
+                    </tr>
+                    <tr>
+                        <th>Departamento:</th>
+                        <td>{{ equipment.responsible.department }}</td>
+                    </tr>
+                    <tr>
+                        <th>Cargo:</th>
+                        <td>{{ equipment.responsible.position }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <h5 class="mb-3">Histórico de Alterações</h5>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Data/Hora</th>
+                                <th>Usuário</th>
+                                <th>Ação</th>
+                                <th>Detalhes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for history in equipment.history.all %}
+                            <tr>
+                                <td>{{ history.history_date|date:"d/m/Y H:i:s" }}</td>
+                                <td>{{ history.history_user.get_full_name }}</td>
+                                <td>
+                                    {% if history.history_type == '+' %}
+                                    <span class="badge bg-success">Criação</span>
+                                    {% elif history.history_type == '~' %}
+                                    <span class="badge bg-warning">Alteração</span>
+                                    {% elif history.history_type == '-' %}
+                                    <span class="badge bg-danger">Exclusão</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if history.history_type == '~' %}
+                                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#historyModal{{ history.id }}">
+                                        <i class="fas fa-info-circle"></i> Ver Alterações
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center">Nenhum histórico encontrado.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% for history in equipment.history.all %}
+{% if history.history_type == '~' %}
+<div class="modal fade" id="historyModal{{ history.id }}" tabindex="-1" aria-labelledby="historyModalLabel{{ history.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="historyModalLabel{{ history.id }}">Alterações em {{ history.history_date|date:"d/m/Y H:i:s" }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Campo</th>
+                            <th>Valor Anterior</th>
+                            <th>Novo Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for field, changes in history.changes.items %}
+                        <tr>
+                            <td>{{ field }}</td>
+                            <td>{{ changes.0 }}</td>
+                            <td>{{ changes.1 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %} 

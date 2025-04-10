@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Editar {{ user.get_full_name }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Editar Usuário</h4>
+        <a href="{% url 'users:user_profile' user.id %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <h5 class="mb-3">Informações Pessoais</h5>
+            <div class="row">
+                <div class="col-md-6">{{ form.first_name|crispy }}</div>
+                <div class="col-md-6">{{ form.last_name|crispy }}</div>
+            </div>
+            {{ form.email|crispy }}
+            {{ form.cpf|crispy }}
+            {{ form.rg|crispy }}
+            {{ form.phone|crispy }}
+            {{ form.birth_date|crispy }}
+
+            <h5 class="mb-3 mt-4">Informações Profissionais</h5>
+            {{ form.position|crispy }}
+            {{ form.department|crispy }}
+            {{ form.is_active|crispy }}
+
+            <h5 class="mb-3 mt-4">Endereço</h5>
+            {{ form.address|crispy }}
+            <div class="row">
+                <div class="col-md-4">{{ form.number|crispy }}</div>
+                <div class="col-md-8">{{ form.complement|crispy }}</div>
+            </div>
+            {{ form.neighborhood|crispy }}
+            <div class="row">
+                <div class="col-md-8">{{ form.city|crispy }}</div>
+                <div class="col-md-4">{{ form.state|crispy }}</div>
+            </div>
+            {{ form.postal_code|crispy }}
+
+            <div class="text-end mt-4">
+                <a href="{% url 'users:user_profile' user.id %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

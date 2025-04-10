@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ user.get_full_name }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Perfil do Usuário</h4>
+        <div>
+            <a href="{% url 'users:user_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+            <a href="{% url 'users:profile_edit' user.id %}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Editar
+            </a>
+            {% if user.is_active %}
+            <a href="{% url 'users:deactivate' user.id %}" class="btn btn-danger">
+                <i class="fas fa-user-times"></i> Desativar
+            </a>
+            {% else %}
+            <a href="{% url 'users:activate' user.id %}" class="btn btn-success">
+                <i class="fas fa-user-check"></i> Ativar
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h5 class="mb-3">Informações Pessoais</h5>
+                <table class="table">
+                    <tr>
+                        <th>Nome Completo:</th>
+                        <td>{{ user.get_full_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Email:</th>
+                        <td>{{ user.email }}</td>
+                    </tr>
+                    <tr>
+                        <th>CPF:</th>
+                        <td>{{ user.cpf }}</td>
+                    </tr>
+                    <tr>
+                        <th>RG:</th>
+                        <td>{{ user.rg }}</td>
+                    </tr>
+                    <tr>
+                        <th>Telefone:</th>
+                        <td>{{ user.phone }}</td>
+                    </tr>
+                    <tr>
+                        <th>Data de Nascimento:</th>
+                        <td>{{ user.birth_date|date:"d/m/Y" }}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h5 class="mb-3">Informações Profissionais</h5>
+                <table class="table">
+                    <tr>
+                        <th>Cargo:</th>
+                        <td>{{ user.position }}</td>
+                    </tr>
+                    <tr>
+                        <th>Departamento:</th>
+                        <td>{{ user.department }}</td>
+                    </tr>
+                    <tr>
+                        <th>Status:</th>
+                        <td>
+                            {% if user.is_active %}
+                            <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                            <span class="badge bg-danger">Inativo</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Data de Cadastro:</th>
+                        <td>{{ user.date_joined|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Último Acesso:</th>
+                        <td>{{ user.last_login|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <h5 class="mb-3">Endereço</h5>
+                <table class="table">
+                    <tr>
+                        <th>Endereço:</th>
+                        <td>{{ user.address }}, {{ user.number }}</td>
+                    </tr>
+                    <tr>
+                        <th>Complemento:</th>
+                        <td>{{ user.complement }}</td>
+                    </tr>
+                    <tr>
+                        <th>Bairro:</th>
+                        <td>{{ user.neighborhood }}</td>
+                    </tr>
+                    <tr>
+                        <th>Cidade/Estado:</th>
+                        <td>{{ user.city }}/{{ user.state }}</td>
+                    </tr>
+                    <tr>
+                        <th>CEP:</th>
+                        <td>{{ user.postal_code }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

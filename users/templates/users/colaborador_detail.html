@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ user.get_full_name }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Detalhes do Colaborador</h4>
+        <div>
+            <a href="{% url 'users:colaborador_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+            <a href="{% url 'users:colaborador_update' user.id %}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Editar
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h5 class="mb-3">Informações Pessoais</h5>
+                <dl class="row">
+                    <dt class="col-sm-4">Nome:</dt>
+                    <dd class="col-sm-8">{{ user.get_full_name }}</dd>
+                    
+                    <dt class="col-sm-4">Nome de usuário:</dt>
+                    <dd class="col-sm-8">{{ user.username }}</dd>
+                    
+                    <dt class="col-sm-4">Email:</dt>
+                    <dd class="col-sm-8">{{ user.email|default:"-" }}</dd>
+                    
+                    <dt class="col-sm-4">Telefone:</dt>
+                    <dd class="col-sm-8">{{ user.telefone|default:"-" }}</dd>
+                    
+                    {% if user.cpf %}
+                    <dt class="col-sm-4">CPF:</dt>
+                    <dd class="col-sm-8">{{ user.cpf }}</dd>
+                    {% endif %}
+                    
+                    {% if user.rg %}
+                    <dt class="col-sm-4">RG:</dt>
+                    <dd class="col-sm-8">{{ user.rg }}</dd>
+                    {% endif %}
+                    
+                    {% if user.data_nascimento %}
+                    <dt class="col-sm-4">Data de Nascimento:</dt>
+                    <dd class="col-sm-8">{{ user.data_nascimento|date:"d/m/Y" }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+            
+            <div class="col-md-6">
+                <h5 class="mb-3">Informações Profissionais</h5>
+                <dl class="row">
+                    <dt class="col-sm-4">Cargo:</dt>
+                    <dd class="col-sm-8">{{ user.cargo|default:"-" }}</dd>
+                    
+                    <dt class="col-sm-4">Departamento:</dt>
+                    <dd class="col-sm-8">{{ user.departamento|default:"-" }}</dd>
+                    
+                    <dt class="col-sm-4">Status:</dt>
+                    <dd class="col-sm-8">
+                        {% if user.is_active %}
+                            <span class="badge bg-success">Ativo</span>
+                        {% else %}
+                            <span class="badge bg-danger">Inativo</span>
+                        {% endif %}
+                    </dd>
+                    
+                    <dt class="col-sm-4">Membro da Equipe:</dt>
+                    <dd class="col-sm-8">
+                        {% if user.is_staff %}
+                            <span class="badge bg-info">Sim</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Não</span>
+                        {% endif %}
+                    </dd>
+                </dl>
+                
+                <h5 class="mb-3 mt-4">Endereço</h5>
+                <dl class="row">
+                    <dt class="col-sm-4">Endereço:</dt>
+                    <dd class="col-sm-8">{{ user.endereco|default:"-" }} {{ user.numero|default:"" }}</dd>
+                    
+                    {% if user.complemento %}
+                    <dt class="col-sm-4">Complemento:</dt>
+                    <dd class="col-sm-8">{{ user.complemento }}</dd>
+                    {% endif %}
+                    
+                    <dt class="col-sm-4">Bairro:</dt>
+                    <dd class="col-sm-8">{{ user.bairro|default:"-" }}</dd>
+                    
+                    <dt class="col-sm-4">Cidade/Estado:</dt>
+                    <dd class="col-sm-8">{{ user.cidade|default:"-" }}/{{ user.estado|default:"-" }}</dd>
+                    
+                    <dt class="col-sm-4">CEP:</dt>
+                    <dd class="col-sm-8">{{ user.cep|default:"-" }}</dd>
+                </dl>
+            </div>
+        </div>
+        
+        <!-- Termos do colaborador -->
+        <div class="mt-4">
+            <h5 class="mb-3">Termos de Responsabilidade</h5>
+            {% if termos %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>Modelo</th>
+                                <th>Status</th>
+                                <th>Data de Envio</th>
+                                <th>Data de Assinatura</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for termo in termos %}
+                            <tr>
+                                <td>{{ termo.modelo.titulo }}</td>
+                                <td>
+                                    {% if termo.status == 'PENDENTE' %}
+                                        <span class="badge bg-warning">Pendente</span>
+                                    {% elif termo.status == 'ENVIADO' %}
+                                        <span class="badge bg-primary">Enviado</span>
+                                    {% elif termo.status == 'ASSINADO' %}
+                                        <span class="badge bg-success">Assinado</span>
+                                    {% elif termo.status == 'RECUSADO' %}
+                                        <span class="badge bg-danger">Recusado</span>
+                                    {% elif termo.status == 'CANCELADO' %}
+                                        <span class="badge bg-secondary">Cancelado</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ termo.data_envio|date:"d/m/Y H:i"|default:"-" }}</td>
+                                <td>{{ termo.data_assinatura|date:"d/m/Y H:i"|default:"-" }}</td>
+                                <td>
+                                    <a href="{% url 'documents:termo_detail' termo.uuid %}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if termo.status == 'ASSINADO' and termo.arquivo_pdf %}
+                                    <a href="{% url 'documents:termo_download' termo.uuid %}" class="btn btn-sm btn-success">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-center">Este colaborador não possui termos de responsabilidade.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 
