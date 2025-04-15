@@ -81,7 +81,10 @@
         <p><strong>Nome:</strong> {{ nome_colaborador }}</p>
         <p><strong>CPF:</strong> {{ cpf }}</p>
         <p><strong>RG:</strong> {{ rg }}</p>
-        <p><strong>Endereço:</strong> {{ endereco }}</p>
+        <p><strong>Endereço:</strong> {{ endereco }}, {{ numero }}{% if complemento %}, {{ complemento }}{% endif %}</p>
+        <p><strong>Bairro:</strong> {{ bairro }}</p>
+        <p><strong>Cidade/Estado:</strong> {{ cidade }}/{{ estado }}</p>
+        <p><strong>CEP:</strong> {{ cep }}</p>
     </div>
     
     {% if equipamentos %}
@@ -90,8 +93,8 @@
         <table>
             <thead>
                 <tr>
-                    <th>Nº de Série</th>
-                    <th>Marca/Modelo</th>
+                    <th>Nº</th>
+                    <th>Descrição</th>
                     <th>Estado</th>
                     <th>Valor</th>
                 </tr>
@@ -99,15 +102,18 @@
             <tbody>
                 {% for equip in equipamentos %}
                 <tr>
-                    <td>{{ equip.numero_serie }}</td>
-                    <td>{{ equip.marca_modelo }}</td>
+                    <td>{{ equip.numero }}</td>
+                    <td style="text-align: left;">
+                        {{ equip.descricao }}<br>
+                        <small>Nº Série: {{ equip.numero_serie }}</small>
+                    </td>
                     <td>{{ equip.estado }}</td>
-                    <td>R$ {{ equip.valor|floatformat:2 }}</td>
+                    <td>{{ equip.valor_formatado }}</td>
                 </tr>
                 {% endfor %}
                 <tr class="total-row">
                     <td colspan="3" style="text-align: right;"><strong>Total:</strong></td>
-                    <td>R$ {{ total_valor|floatformat:2 }}</td>
+                    <td>{{ total_valor_formatado }}</td>
                 </tr>
             </tbody>
         </table>
@@ -136,9 +142,30 @@
         </div>
     </div>
     
-    <div class="data-hash">
-        <p>Data da assinatura: {{ data_assinatura }}</p>
-        <p>Hash de verificação: {{ hash_assinatura }}</p>
+    <div class="secao">
+        <h2>INFORMAÇÕES DE VERIFICAÇÃO</h2>
+        <table style="border: none; margin-top: 15px;">
+            <tr style="border: none;">
+                <td style="border: none; text-align: left; padding: 5px 15px 5px 0; width: 30%;"><strong>Data da assinatura:</strong></td>
+                <td style="border: none; text-align: left; padding: 5px 0;">{{ data_assinatura }}</td>
+            </tr>
+            {% if ip_assinatura %}
+            <tr style="border: none;">
+                <td style="border: none; text-align: left; padding: 5px 15px 5px 0;"><strong>IP da assinatura:</strong></td>
+                <td style="border: none; text-align: left; padding: 5px 0;">{{ ip_assinatura }}</td>
+            </tr>
+            {% endif %}
+            {% if dispositivo_assinatura %}
+            <tr style="border: none;">
+                <td style="border: none; text-align: left; padding: 5px 15px 5px 0; vertical-align: top;"><strong>Dispositivo:</strong></td>
+                <td style="border: none; text-align: left; padding: 5px 0; font-size: 8pt;">{{ dispositivo_assinatura }}</td>
+            </tr>
+            {% endif %}
+            <tr style="border: none;">
+                <td style="border: none; text-align: left; padding: 5px 15px 5px 0; vertical-align: top;"><strong>Hash de verificação:</strong></td>
+                <td style="border: none; text-align: left; padding: 5px 0; font-family: monospace; font-size: 9pt; word-break: break-all;">{{ hash_assinatura }}</td>
+            </tr>
+        </table>
     </div>
 </body>
 </html> 

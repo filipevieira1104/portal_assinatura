@@ -37,6 +37,7 @@ from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
 from reportlab.lib import colors
 from bs4 import BeautifulSoup
 import tempfile
+import requests
 
 try:
     from docx import Document
@@ -72,6 +73,9 @@ class EquipamentoUpdateView(StaffRequiredMixin, UpdateView):
     template_name = 'documents/equipamento_form.html'
     fields = ['tipo', 'marca', 'modelo', 'numero_serie', 'descricao',
               'valor', 'data_aquisicao', 'status', 'observacoes']
+
+    def get_success_url(self):
+        return reverse_lazy('documents:equipamento_list')
 
 # Views de Documento Modelo
 class DocumentoModeloListView(StaffRequiredMixin, ListView):
@@ -266,11 +270,17 @@ class TermoSignView(LoginRequiredMixin, View):
         user.cep = form_data.get('cep')
         user.save()
         
-        # Atualiza o estado dos equipamentos
+        # Atualiza o estado dos equipamentos e vincula o usuário aos equipamentos
         # Obter equipamentos associados ao termo através da relação ItemTermo
         itens_termo = ItemTermo.objects.filter(termo=termo)
         for item in itens_termo:
             equip = item.equipamento
+            # Atribuir o usuário ao equipamento
+            equip.usuario = user
+            equip.status = 'EM_USO'  # Atualiza o status do equipamento para Em Uso
+            equip.save()
+            
+            # Atualiza o estado de entrega se tiver sido informado
             estado_key = f"estado_{equip.id}"
             if estado_key in form_data:
                 item.estado_entrega = form_data.get(estado_key)
@@ -280,8 +290,30 @@ class TermoSignView(LoginRequiredMixin, View):
         termo.status = TermoResponsabilidade.Status.ASSINADO
         termo.data_assinatura = timezone.now()
         
+        # Capturar o IP do cliente de forma mais completa
+        # Tenta vários cabeçalhos HTTP para identificar o IP real do cliente
+        cliente_ip = None
+        # Verifica se está atrás de um proxy
+        if 'HTTP_X_FORWARDED_FOR' in request.META:
+            cliente_ip = request.META['HTTP_X_FORWARDED_FOR'].split(',')[0].strip()
+        elif 'HTTP_X_REAL_IP' in request.META:
+            cliente_ip = request.META['HTTP_X_REAL_IP']
+        elif 'HTTP_CLIENT_IP' in request.META:
+            cliente_ip = request.META['HTTP_CLIENT_IP']
+        elif 'REMOTE_ADDR' in request.META:
+            cliente_ip = request.META['REMOTE_ADDR']
+        
+        # Captura informações do navegador/dispositivo
+        user_agent = request.META.get('HTTP_USER_AGENT', 'Navegador não identificado')
+        
+        # Usa o IP capturado ou "não identificado" se não encontrado
+        termo.ip_assinatura = cliente_ip or "IP não identificado"
+        
+        # Adiciona informações do dispositivo usado para assinatura
+        termo.observacoes += f"\n\nInformações da assinatura:\nIP: {termo.ip_assinatura}\nDispositivo: {user_agent}"
+        
         # Gera hash para a assinatura
-        signature_data = f"{termo.uuid}_{termo.colaborador.username}_{termo.data_assinatura.isoformat()}"
+        signature_data = f"{termo.uuid}_{termo.colaborador.username}_{termo.data_assinatura.isoformat()}_{termo.ip_assinatura}"
         termo.hash_assinatura = hashlib.sha256(signature_data.encode()).hexdigest()
         
         termo.save()
@@ -330,15 +362,34 @@ class TermoSignView(LoginRequiredMixin, View):
                 # Placeholders para substituir
                 placeholders = {
                     "${NOME}": nome_completo,
-                    "${CPF}": user.cpf,
-                    "${RG}": user.rg,
-                    "${ENDERECO}": endereco_completo,
-                    "${CIDADE}": user.cidade,
-                    "${ESTADO}": user.estado,
-                    "${CEP}": user.cep,
+                    "${CPF}": user.cpf or "",
+                    "${RG}": user.rg or "",
+                    "${ENDERECO}": user.endereco or "",
+                    "${NUMERO}": user.numero or "",
+                    "${COMPLEMENTO}": user.complemento or "",
+                    "${BAIRRO}": user.bairro or "",
+                    "${CIDADE}": user.cidade or "",
+                    "${ESTADO}": user.estado or "",
+                    "${CEP}": user.cep or "",
+                    "${ENDERECO_COMPLETO}": endereco_completo,
                     "${DATA_ASSINATURA}": termo.data_assinatura.strftime("%d/%m/%Y") if termo.data_assinatura else "",
+                    "${IP_ASSINATURA}": termo.ip_assinatura or "",
+                    "${DISPOSITIVO_ASSINATURA}": requests.META.get('HTTP_USER_AGENT', '') if 'request' in locals() else "",
                     "${HASH_ASSINATURA}": termo.hash_assinatura or "",
                 }
+                
+                # Adicionar informações dos equipamentos para a tabela
+                itens_termo = ItemTermo.objects.filter(termo=termo)
+                equipamentos = [item.equipamento for item in itens_termo]
+                
+                # Para cada equipamento, adicione placeholders específicos
+                for i, equip in enumerate(equipamentos):
+                    placeholders[f"${{EQUIP_{i+1}_DESCRICAO}}"] = f"{equip.tipo} {equip.marca} {equip.modelo} - {equip.numero_serie}"
+                    placeholders[f"${{EQUIP_{i+1}_VALOR}}"] = f"R$ {equip.valor:.2f}".replace('.', ',')
+                
+                # Placeholder para valor total
+                total_valor = sum(equip.valor for equip in equipamentos)
+                placeholders["${VALOR_TOTAL}"] = f"R$ {total_valor:.2f}".replace('.', ',')
                 
                 # Procurar e substituir texto em todos os parágrafos
                 for paragraph in doc.paragraphs:
@@ -394,15 +445,20 @@ class TermoSignView(LoginRequiredMixin, View):
         for i, equip in enumerate(equipamentos):
             item = itens_termo[i]
             lista_equipamentos.append({
+                'numero': i + 1,
+                'tipo': equip.tipo,
+                'marca': equip.marca,
+                'modelo': equip.modelo,
                 'numero_serie': equip.numero_serie,
-                'marca_modelo': f"{equip.marca} {equip.modelo}",
+                'descricao': f"{equip.tipo} {equip.marca} {equip.modelo} - {equip.numero_serie}",
                 'estado': item.estado_entrega,
-                'valor': equip.valor
+                'valor': equip.valor,
+                'valor_formatado': f"R$ {equip.valor:.2f}".replace('.', ',')
             })
             total_valor += equip.valor
         
         # Data de assinatura formatada
-        data_assinatura = termo.data_assinatura.strftime("%d/%m/%Y %H:%M:%S")
+        data_assinatura = termo.data_assinatura.strftime("%d/%m/%Y") if termo.data_assinatura else ""
         
         # Conteúdo do termo (texto limpo)
         conteudo_termo = ""
@@ -410,17 +466,40 @@ class TermoSignView(LoginRequiredMixin, View):
             soup = BeautifulSoup(termo.modelo.conteudo, 'html.parser')
             conteudo_termo = soup.get_text('\n\n')
             
+        # Captura o user agent se ainda não tiver sido registrado nas observações
+        user_agent = None
+        if hasattr(termo, 'observacoes') and 'Dispositivo:' in termo.observacoes:
+            # Extrai o user agent das observações
+            try:
+                linhas = termo.observacoes.split('\n')
+                for linha in linhas:
+                    if linha.startswith('Dispositivo:'):
+                        user_agent = linha.replace('Dispositivo:', '').strip()
+                        break
+            except:
+                user_agent = None
+        
         # Usar template HTML para gerar o PDF
         context = {
             'titulo': "TERMO DE RESPONSABILIDADE",
             'nome_colaborador': nome_completo,
             'cpf': user.cpf,
             'rg': user.rg,
-            'endereco': endereco_completo,
+            'endereco': user.endereco,
+            'numero': user.numero,
+            'complemento': user.complemento,
+            'bairro': user.bairro,
+            'cidade': user.cidade,
+            'estado': user.estado,
+            'cep': user.cep,
+            'endereco_completo': endereco_completo,
             'equipamentos': lista_equipamentos,
             'total_valor': total_valor,
+            'total_valor_formatado': f"R$ {total_valor:.2f}".replace('.', ','),
             'conteudo_termo': conteudo_termo,
             'data_assinatura': data_assinatura,
+            'ip_assinatura': termo.ip_assinatura,
+            'dispositivo_assinatura': user_agent,
             'hash_assinatura': termo.hash_assinatura
         }
         

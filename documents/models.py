@@ -34,6 +34,8 @@ class Equipamento(models.Model):
     observacoes = models.TextField('Observações', blank=True)
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL,
+        blank=True,
+        null=True,
         on_delete=models.CASCADE,
         related_name='equipamentos'
     )
