@@ -21,6 +21,7 @@ urlpatterns = [
     path('termos/novo/', views.TermoCreateView.as_view(), name='termo_create'),
     path('termos/<uuid:uuid>/', views.TermoDetailView.as_view(), name='termo_detail'),
     path('termos/<uuid:uuid>/assinar/', views.TermoSignView.as_view(), name='termo_sign'),
+    path('termos/<uuid:uuid>/preview/', views.TermoPreviewView.as_view(), name='termo_preview'),
     path('termos/<uuid:uuid>/download/', views.TermoDownloadView.as_view(), name='termo_download'),
     path('termos/<uuid:uuid>/editar/', views.TermoUpdateView.as_view(), name='termo_update'),
     

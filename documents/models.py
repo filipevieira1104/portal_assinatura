@@ -3,8 +3,6 @@ from django.conf import settings
 from django.utils import timezone
 import uuid
 from tinymce.models import HTMLField
-from django import forms
-from tinymce.widgets import TinyMCE
 
 class Equipamento(models.Model):
     TIPO_CHOICES = [
@@ -134,11 +132,3 @@ class ItemTermo(models.Model):
         
     def __str__(self):
         return f"{self.equipamento} - {self.termo.colaborador.get_full_name()}"
-
-class DocumentoModeloForm(forms.ModelForm):
-    class Meta:
-        model = DocumentoModelo
-        fields = ['titulo', 'conteudo', 'versao', 'ativo']
-        widgets = {
-            'conteudo': TinyMCE(attrs={'cols': 80, 'rows': 30}),
-        }

@@ -22,7 +22,6 @@ from .models import Equipamento, DocumentoModelo, TermoResponsabilidade, ItemTer
 from users.views import StaffRequiredMixin
 from .forms import ModeloDocumentoForm
 from django.urls import reverse_lazy
-from django.views.generic.edit import UpdateView
 from reportlab.pdfgen import canvas
 import io
 from tinymce.widgets import TinyMCE
@@ -30,14 +29,12 @@ from django.core.exceptions import PermissionDenied
 from xhtml2pdf import pisa
 from django.template.loader import get_template
 from django.template import Context
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
-from reportlab.lib import colors
-from bs4 import BeautifulSoup
 import tempfile
 import requests
+import logging
+
+# Configurar logger
+logger = logging.getLogger(__name__)
 
 try:
     from docx import Document
@@ -45,6 +42,7 @@ try:
     DOCX_AVAILABLE = True
 except ImportError:
     DOCX_AVAILABLE = False
+    logger.warning("Bibliotecas docx e docx2pdf não disponíveis. Conversão de Word para PDF não será suportada.")
 
 # Create your views here.
 
@@ -176,9 +174,9 @@ class TermoUpdateView(UserPassesTestMixin, UpdateView):
 
     def get_object(self, queryset=None):
         uuid = self.kwargs.get('uuid')  
-        print(f'Buscando TermoResponsabilidade com uuid={uuid}')
+        logger.info(f'Buscando TermoResponsabilidade com uuid={uuid}')
         obj = get_object_or_404(TermoResponsabilidade, uuid=uuid)
-        print(f'Objeto encontrado: {obj}')
+        logger.info(f'Objeto encontrado: {obj}')
         return obj
 
     def get_success_url(self):
@@ -324,23 +322,51 @@ class TermoSignView(LoginRequiredMixin, View):
         messages.success(request, "Termo assinado com sucesso!")
         return redirect('documents:termo_detail', uuid=termo.uuid)
     
-    def gerar_pdf_termo(self, termo):
+    def gerar_pdf_termo(self, termo, custom_path=None):
         """
         Gera o PDF do termo de responsabilidade assinado usando uma abordagem mais simples
+        
+        Args:
+            termo: Objeto TermoResponsabilidade
+            custom_path: Caminho personalizado para o arquivo PDF (opcional)
         """
+        logger.info(f"Iniciando geração de PDF para termo {termo.uuid}")
+        
+        # Verificar o modelo
+        if not termo.modelo:
+            logger.error(f"Termo {termo.uuid} não possui modelo associado")
+            raise Exception("O termo não possui um modelo de documento associado.")
+
+        # Extrair o user_agent das observações, se existir
+        user_agent = None
+        if termo.observacoes and 'Dispositivo:' in termo.observacoes:
+            try:
+                for linha in termo.observacoes.split('\n'):
+                    if linha.strip().startswith('Dispositivo:'):
+                        user_agent = linha.replace('Dispositivo:', '').strip()
+                        break
+            except Exception as e:
+                logger.error(f"Erro ao extrair user_agent: {e}")
+        
         # Configuração do caminho do PDF
-        media_root = settings.MEDIA_ROOT
-        pdf_dir = os.path.join(media_root, 'documentos', 'termos')
-        
-        # Cria o diretório se não existir
-        os.makedirs(pdf_dir, exist_ok=True)
-        
-        # Define o nome do arquivo
-        file_name = f"termo_{termo.uuid}.pdf"
-        pdf_path = os.path.join(pdf_dir, file_name)
+        if custom_path:
+            pdf_path = custom_path
+        else:
+            media_root = settings.MEDIA_ROOT
+            pdf_dir = os.path.join(media_root, 'documentos', 'termos')
+            os.makedirs(pdf_dir, exist_ok=True)
+            file_name = f"termo_{termo.uuid}.pdf"
+            pdf_path = os.path.join(pdf_dir, file_name)
         
         # Verificar se existe um arquivo Word associado ao modelo e se as bibliotecas necessárias estão disponíveis
         if DOCX_AVAILABLE and termo.modelo and termo.modelo.arquivo_word:
+            logger.info(f"Gerando PDF a partir do arquivo Word: {termo.modelo.arquivo_word.path}")
+            
+            # Verificar se o arquivo Word existe
+            if not os.path.exists(termo.modelo.arquivo_word.path):
+                logger.error(f"Arquivo Word não encontrado: {termo.modelo.arquivo_word.path}")
+                raise Exception(f"Arquivo do modelo não encontrado: {termo.modelo.arquivo_word.path}")
+                
             try:
                 # Criar um arquivo temporário para trabalhar com o Word
                 with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as temp_docx:
@@ -374,7 +400,7 @@ class TermoSignView(LoginRequiredMixin, View):
                     "${ENDERECO_COMPLETO}": endereco_completo,
                     "${DATA_ASSINATURA}": termo.data_assinatura.strftime("%d/%m/%Y") if termo.data_assinatura else "",
                     "${IP_ASSINATURA}": termo.ip_assinatura or "",
-                    "${DISPOSITIVO_ASSINATURA}": requests.META.get('HTTP_USER_AGENT', '') if 'request' in locals() else "",
+                    "${DISPOSITIVO_ASSINATURA}": user_agent if 'user_agent' in locals() else "",
                     "${HASH_ASSINATURA}": termo.hash_assinatura or "",
                 }
                 
@@ -415,14 +441,15 @@ class TermoSignView(LoginRequiredMixin, View):
                 # Limpar o arquivo temporário
                 os.unlink(temp_docx_path)
                 
-                # Atualizar o termo com o caminho do PDF
-                termo.arquivo_pdf.save(file_name, ContentFile(open(pdf_path, 'rb').read()), save=True)
+                # Atualizar o termo com o caminho do PDF apenas se não for uma prévia
+                if not custom_path:
+                    termo.arquivo_pdf.save(file_name, ContentFile(open(pdf_path, 'rb').read()), save=True)
                 
                 return pdf_path
                 
             except Exception as e:
                 # Se ocorrer um erro, voltar para o método padrão de geração de PDF
-                print(f"Erro ao converter Word para PDF: {str(e)}")
+                logger.error(f"Erro ao converter Word para PDF: {str(e)}")
         
         # Se não tiver arquivo Word ou ocorrer erro, usar a abordagem HTML
         # Busca dados do termo
@@ -465,19 +492,6 @@ class TermoSignView(LoginRequiredMixin, View):
         if termo.modelo and termo.modelo.conteudo:
             soup = BeautifulSoup(termo.modelo.conteudo, 'html.parser')
             conteudo_termo = soup.get_text('\n\n')
-            
-        # Captura o user agent se ainda não tiver sido registrado nas observações
-        user_agent = None
-        if hasattr(termo, 'observacoes') and 'Dispositivo:' in termo.observacoes:
-            # Extrai o user agent das observações
-            try:
-                linhas = termo.observacoes.split('\n')
-                for linha in linhas:
-                    if linha.startswith('Dispositivo:'):
-                        user_agent = linha.replace('Dispositivo:', '').strip()
-                        break
-            except:
-                user_agent = None
         
         # Usar template HTML para gerar o PDF
         context = {
@@ -515,8 +529,9 @@ class TermoSignView(LoginRequiredMixin, View):
         if pisa_status.err:
             raise Exception("Erro ao gerar o PDF")
             
-        # Atualizar o termo com o caminho do PDF
-        termo.arquivo_pdf.save(file_name, ContentFile(open(pdf_path, 'rb').read()), save=True)
+        # Atualizar o termo com o caminho do PDF apenas se não for uma prévia
+        if not custom_path:
+            termo.arquivo_pdf.save(file_name, ContentFile(open(pdf_path, 'rb').read()), save=True)
         
         return pdf_path
 
@@ -569,10 +584,129 @@ class TermoDownloadView(LoginRequiredMixin, View):
             nome_arquivo = f"termo_{nome_colaborador}_{termo.uuid}.pdf"
             
             # Retorna o arquivo como resposta
-            response = FileResponse(open(arquivo_path, 'rb'))
-            response['Content-Disposition'] = f'attachment; filename="{nome_arquivo}"'
-            return response
+            with open(arquivo_path, 'rb') as pdf:
+                if 'download' in request.GET:
+                    # Se o parâmetro download estiver presente, força o download
+                    response = HttpResponse(pdf.read(), content_type='application/pdf')
+                    response['Content-Disposition'] = f'attachment; filename="{nome_arquivo}"'
+                else:
+                    # Caso contrário, exibe no navegador
+                    response = HttpResponse(pdf.read(), content_type='application/pdf')
+                    response['Content-Disposition'] = f'inline; filename="{nome_arquivo}"'
+                    response['X-Frame-Options'] = 'SAMEORIGIN'
+                    response['Content-Security-Policy'] = "frame-ancestors 'self'"
+                
+                response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+                response['Pragma'] = 'no-cache'
+                response['Expires'] = '0'
+                return response
             
         except Exception as e:
             messages.error(request, f"Erro ao acessar o arquivo: {str(e)}")
             return redirect('documents:termo_detail', uuid=termo.uuid)
+
+class TermoPreviewView(LoginRequiredMixin, View):
+    def get(self, request, uuid):
+        logger.info(f"Iniciando preview do termo {uuid}")
+        
+        try:
+            termo = TermoResponsabilidade.objects.get(uuid=uuid)
+            logger.info(f"Termo encontrado: {termo.id}, modelo: {termo.modelo_id if termo.modelo else 'Nenhum'}")
+        except TermoResponsabilidade.DoesNotExist:
+            logger.error(f"Termo não encontrado: {uuid}")
+            messages.error(request, "Termo não encontrado.")
+            return redirect('documents:termo_list')
+        
+        # Verifica se o usuário tem permissão para visualizar
+        if not termo.pode_assinar(request.user) and not request.user.is_staff:
+            logger.warning(f"Usuário {request.user.username} sem permissão para visualizar termo {termo.uuid}")
+            messages.error(request, "Você não tem permissão para visualizar este termo.")
+            return redirect('documents:termo_list')
+        
+        # Preparar dados do colaborador para prévia
+        user = termo.colaborador
+        
+        # Se os dados existem, use-os; caso contrário, use dados do formulário se disponíveis
+        form_data = request.session.get(f'termo_preview_data_{uuid}', {})
+        
+        # Verificar se o modelo existe
+        if not termo.modelo:
+            logger.error(f"Termo {termo.uuid} não possui modelo de documento associado")
+            messages.error(request, "Este termo não possui um modelo de documento associado.")
+            return redirect('documents:termo_detail', uuid=termo.uuid)
+            
+        # Criar uma versão temporária do PDF para prévia
+        try:
+            logger.info(f"Gerando prévia do PDF para o termo {termo.uuid}")
+            
+            # Criar uma instância da TermoSignView para usar o método gerar_pdf_termo
+            sign_view = TermoSignView()
+            
+            # Simular temporariamente alguns dados para a prévia
+            # Salvar valores originais
+            original_ip = termo.ip_assinatura
+            original_hash = termo.hash_assinatura
+            original_status = termo.status
+            original_data = termo.data_assinatura
+            
+            # Temporariamente definir valores para a prévia
+            termo.ip_assinatura = "Prévia - Não assinado"
+            termo.hash_assinatura = "Prévia - Este documento ainda não foi assinado"
+            termo.status = TermoResponsabilidade.Status.PENDENTE
+            termo.data_assinatura = timezone.now()  # Data atual apenas para a prévia
+            
+            # Gerar o PDF temporário
+            preview_dir = os.path.join(settings.MEDIA_ROOT, 'documentos', 'previews')
+            os.makedirs(preview_dir, exist_ok=True)
+            
+            preview_filename = f"preview_{termo.uuid}_{int(timezone.now().timestamp())}.pdf"
+            preview_path = os.path.join(preview_dir, preview_filename)
+            
+            # Usa a função existente para gerar o PDF, mas com um caminho diferente
+            try:
+                pdf_path = sign_view.gerar_pdf_termo(termo, custom_path=preview_path)
+                logger.info(f"Prévia do PDF gerada com sucesso: {pdf_path}")
+            except Exception as e:
+                logger.error(f"Erro ao gerar PDF na prévia: {str(e)}")
+                raise
+            
+            # Restaurar valores originais
+            termo.ip_assinatura = original_ip
+            termo.hash_assinatura = original_hash
+            termo.status = original_status
+            termo.data_assinatura = original_data
+            termo.save()  # Salvar para garantir que não foram feitas alterações permanentes
+            
+            # Retornar o PDF como resposta
+            if os.path.exists(preview_path):
+                try:
+                    with open(preview_path, 'rb') as pdf:
+                        file_content = pdf.read()
+                        
+                    if not file_content:
+                        logger.error(f"Arquivo de prévia vazio: {preview_path}")
+                        messages.error(request, "Arquivo de prévia vazio. Tente novamente.")
+                        return redirect('documents:termo_detail', uuid=termo.uuid)
+                        
+                    response = HttpResponse(file_content, content_type='application/pdf')
+                    response['Content-Disposition'] = f'inline; filename="preview_{termo.uuid}.pdf"'
+                    response['X-Frame-Options'] = 'SAMEORIGIN'
+                    response['Content-Security-Policy'] = "frame-ancestors 'self'"
+                    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+                    response['Pragma'] = 'no-cache'
+                    response['Expires'] = '0'
+                    logger.info(f"Arquivo PDF sendo servido: {preview_path}")
+                    return response
+                except Exception as e:
+                    logger.error(f"Erro ao ler o arquivo de prévia: {str(e)}")
+                    messages.error(request, f"Erro ao ler o arquivo de prévia: {str(e)}")
+                    return redirect('documents:termo_detail', uuid=termo.uuid)
+            else:
+                logger.error(f"Arquivo de prévia não foi encontrado: {preview_path}")
+                messages.error(request, "Não foi possível gerar a prévia do documento.")
+                return redirect('documents:termo_detail', uuid=termo.uuid)
+            
+        except Exception as e:
+            logger.error(f"Erro ao gerar prévia do documento: {e}")
+            messages.error(request, f"Erro ao gerar prévia: {str(e)}")
+            return redirect('documents:termo_sign', uuid=termo.uuid)

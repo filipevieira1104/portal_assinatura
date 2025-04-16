@@ -4,53 +4,96 @@
 {% block title %}Assinatura de Termo{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid mt-4">
     <div class="row">
         <div class="col">
             <h2>Assinatura de Termo de Responsabilidade</h2>
-            <div class="card">
-                <div class="card-header">
-                    <h4>{{ termo.modelo.titulo }}</h4>
-                </div>
-                <div class="card-body">
-                    <!-- Conteúdo do documento -->
-                    <div class="documento-preview mb-4">
-                        {{ termo.modelo.conteudo|safe }}
-                    </div>
-                    
-                    <!-- Lista de equipamentos -->
-                    {% if equipamentos %}
-                    <h5>Equipamentos:</h5>
-                    <table class="table table-striped mt-3">
-                        <thead>
-                            <tr>
-                                <th>Número de Série</th>
-                                <th>Marca/Modelo</th>
-                                <th>Valor</th>
-                                <th>Estado de Entrega</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in itens_termo %}
-                            <tr>
-                                <td>{{ item.equipamento.numero_serie }}</td>
-                                <td>{{ item.equipamento.marca }} {{ item.equipamento.modelo }}</td>
-                                <td>R$ {{ item.equipamento.valor }}</td>
-                                <td>{{ item.estado_entrega }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    {% endif %}
-                    
-                    <!-- Botão para abrir o modal de assinatura -->
-                    <div class="text-center mt-4">
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAssinatura">
-                            Assinar Termo
-                        </button>
-                        <a href="{% url 'documents:termo_detail' uuid=termo.uuid %}" class="btn btn-secondary">Voltar</a>
+            
+            <!-- Abas para alternar entre visualização e dados -->
+            <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="documento-tab" data-bs-toggle="tab" data-bs-target="#documento-tab-pane" type="button" role="tab" aria-controls="documento-tab-pane" aria-selected="true">Visualizar Documento</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="detalhes-tab" data-bs-toggle="tab" data-bs-target="#detalhes-tab-pane" type="button" role="tab" aria-controls="detalhes-tab-pane" aria-selected="false">Detalhes do Termo</button>
+                </li>
+            </ul>
+            
+            <div class="tab-content" id="myTabContent">
+                <!-- Aba de visualização do documento -->
+                <div class="tab-pane fade show active" id="documento-tab-pane" role="tabpanel" aria-labelledby="documento-tab" tabindex="0">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>Visualização do Documento</h4>
+                            <p class="text-muted mb-0">Confira atentamente o documento antes de assinar</p>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="ratio ratio-16x9" style="min-height: 600px;">
+                                <object 
+                                    data="{% url 'documents:termo_preview' uuid=termo.uuid %}" 
+                                    type="application/pdf" 
+                                    width="100%" 
+                                    height="600">
+                                    <p>A prévia do documento não pode ser exibida. <a href="{% url 'documents:termo_preview' uuid=termo.uuid %}" target="_blank">Clique aqui para abrir em uma nova aba</a>.</p>
+                                </object>
+                            </div>
+                        </div>
                     </div>
                 </div>
+                
+                <!-- Aba de detalhes do termo -->
+                <div class="tab-pane fade" id="detalhes-tab-pane" role="tabpanel" aria-labelledby="detalhes-tab" tabindex="0">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>{{ termo.modelo.titulo }}</h4>
+                        </div>
+                        <div class="card-body">
+                            <!-- Conteúdo do documento (visão HTML) -->
+                            <div class="documento-preview mb-4">
+                                {{ termo.modelo.conteudo|safe }}
+                            </div>
+                            
+                            <!-- Lista de equipamentos -->
+                            {% if equipamentos %}
+                            <h5>Equipamentos:</h5>
+                            <table class="table table-striped mt-3">
+                                <thead>
+                                    <tr>
+                                        <th>Número de Série</th>
+                                        <th>Marca/Modelo</th>
+                                        <th>Valor</th>
+                                        <th>Estado de Entrega</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in itens_termo %}
+                                    <tr>
+                                        <td>{{ item.equipamento.numero_serie }}</td>
+                                        <td>{{ item.equipamento.marca }} {{ item.equipamento.modelo }}</td>
+                                        <td>R$ {{ item.equipamento.valor }}</td>
+                                        <td>{{ item.estado_entrega }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Botões de ação -->
+            <div class="text-center mt-4">
+                <div class="form-check mb-3 justify-content-center d-flex">
+                    <input class="form-check-input me-2" type="checkbox" id="concordo" required>
+                    <label class="form-check-label" for="concordo">
+                        <strong>Declaro que li e concordo com os termos e condições acima.</strong>
+                    </label>
+                </div>
+                <button type="button" class="btn btn-primary" id="btnAbrirModal" disabled data-bs-toggle="modal" data-bs-target="#modalAssinatura">
+                    Assinar Termo
+                </button>
+                <a href="{% url 'documents:termo_detail' uuid=termo.uuid %}" class="btn btn-secondary">Voltar</a>
             </div>
         </div>
     </div>
@@ -202,6 +245,25 @@
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        console.log("DOM carregado na página de assinatura");
+
+        // Ativar/desativar botão de assinatura conforme checkbox
+        const concordoCheckbox = document.getElementById('concordo');
+        const btnAbrirModal = document.getElementById('btnAbrirModal');
+        
+        if (concordoCheckbox && btnAbrirModal) {
+            console.log("Elementos de assinatura encontrados");
+            
+            // Definir estado inicial
+            btnAbrirModal.disabled = !concordoCheckbox.checked;
+            
+            // Evento de alteração do checkbox
+            concordoCheckbox.addEventListener('click', function() {
+                console.log("Checkbox clicado - Estado:", this.checked);
+                btnAbrirModal.disabled = !this.checked;
+            });
+        }
+        
         // Validação de CPF
         const cpfInput = document.getElementById('cpf');
         if (cpfInput) {

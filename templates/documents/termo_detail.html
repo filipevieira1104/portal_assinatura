@@ -3,72 +3,137 @@
 {% block title %}Detalhes do Termo de Responsabilidade{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="card">
-        <div class="card-header">
-            <h2>Termo de Responsabilidade</h2>
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Termo de Responsabilidade</h2>
+        <div>
+            {% if termo.status == 'ASSINADO' and termo.arquivo_pdf %}
+            <a href="{% url 'documents:termo_download' termo.uuid %}" class="btn btn-primary">
+                <i class="fas fa-download"></i> Download do Termo
+            </a>
+            {% endif %}
+            <a href="{% url 'documents:termo_list' %}" class="btn btn-secondary">Voltar para a lista</a>
         </div>
-        <div class="card-body">
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <h5>Detalhes do Termo</h5>
-                    <p><strong>Colaborador:</strong> {{ termo.colaborador.get_full_name }}</p>
-                    <p><strong>Status:</strong> {{ termo.get_status_display }}</p>
-                    <p><strong>Data de Envio:</strong> {{ termo.data_envio|date:"d/m/Y"|default:"Não enviado" }}</p>
-                    <p><strong>Data de Assinatura:</strong> {{ termo.data_assinatura|date:"d/m/Y"|default:"Não assinado" }}</p>
+    </div>
+
+    <!-- Abas para navegação -->
+    <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="documento-tab" data-bs-toggle="tab" data-bs-target="#documento-tab-pane" type="button" role="tab" aria-controls="documento-tab-pane" aria-selected="true">Visualizar Documento</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="detalhes-tab" data-bs-toggle="tab" data-bs-target="#detalhes-tab-pane" type="button" role="tab" aria-controls="detalhes-tab-pane" aria-selected="false">Detalhes do Termo</button>
+        </li>
+    </ul>
+    
+    <div class="tab-content" id="myTabContent">
+        <!-- Aba de visualização do documento -->
+        <div class="tab-pane fade show active" id="documento-tab-pane" role="tabpanel" aria-labelledby="documento-tab" tabindex="0">
+            <div class="card">
+                <div class="card-header">
+                    <h4>{{ termo.modelo.titulo }}</h4>
+                    <p class="text-muted mb-0">
+                        {% if termo.status == 'ASSINADO' %}
+                        Termo assinado em {{ termo.data_assinatura|date:"d/m/Y" }}
+                        {% else %}
+                        Visualização do documento antes da assinatura
+                        {% endif %}
+                    </p>
                 </div>
-                <div class="col-md-6">
-                    <h5>Equipamentos</h5>
-                    <ul>
-                        {% for item in termo.itemtermo_set.all %}
-                        <li>{{ item.equipamento.marca }} {{ item.equipamento.modelo }} ({{ item.equipamento.numero_serie }})</li>
-                        {% empty %}
-                        <li>Nenhum equipamento associado</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-            
-            <hr>
-            
-            <div class="row">
-                <div class="col-12">
-                    <h5>Conteúdo do Termo</h5>
-                    <div class="border p-3">
-                        {{ conteudo_documento|safe }}
+                <div class="card-body p-0">
+                    <div class="ratio ratio-16x9" style="min-height: 600px;">
+                        {% if termo.status == 'ASSINADO' and termo.arquivo_pdf %}
+                            <object 
+                                data="{{ termo.arquivo_pdf.url }}" 
+                                type="application/pdf" 
+                                width="100%" 
+                                height="600">
+                                <p>O documento não pode ser exibido. <a href="{{ termo.arquivo_pdf.url }}" target="_blank">Clique aqui para abrir em uma nova aba</a>.</p>
+                            </object>
+                        {% else %}
+                            <object 
+                                data="{% url 'documents:termo_preview' uuid=termo.uuid %}" 
+                                type="application/pdf" 
+                                width="100%" 
+                                height="600">
+                                <p>A prévia do documento não pode ser exibida. <a href="{% url 'documents:termo_preview' uuid=termo.uuid %}" target="_blank">Clique aqui para abrir em uma nova aba</a>.</p>
+                            </object>
+                        {% endif %}
                     </div>
                 </div>
             </div>
             
             {% if pode_assinar %}
-            <hr>
-            <div class="row">
-                <div class="col-12">
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="concordo" required>
-                        <label class="form-check-label" for="concordo">
-                            Declaro que li e concordo com os termos e condições acima.
-                        </label>
+            <div class="card mt-3">
+                <div class="card-body">
+                    <form>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="concordo" onchange="document.getElementById('btnAbrirModal').disabled = !this.checked;" required>
+                            <label class="form-check-label" for="concordo">
+                                <strong>Declaro que li e concordo com os termos e condições acima.</strong>
+                            </label>
+                        </div>
+                        <button type="button" class="btn btn-success btn-lg" id="btnAbrirModal" disabled 
+                            data-bs-toggle="modal" data-bs-target="#modalDadosUsuario">Assinar Termo</button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Aba de detalhes do termo -->
+        <div class="tab-pane fade" id="detalhes-tab-pane" role="tabpanel" aria-labelledby="detalhes-tab" tabindex="0">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h5>Detalhes do Termo</h5>
+                            <p><strong>Colaborador:</strong> {{ termo.colaborador.get_full_name }}</p>
+                            <p><strong>Status:</strong> {{ termo.get_status_display }}</p>
+                            <p><strong>Data de Envio:</strong> {{ termo.data_envio|date:"d/m/Y"|default:"Não enviado" }}</p>
+                            <p><strong>Data de Assinatura:</strong> {{ termo.data_assinatura|date:"d/m/Y"|default:"Não assinado" }}</p>
+                            {% if termo.status == 'ASSINADO' %}
+                            <p><strong>IP da Assinatura:</strong> {{ termo.ip_assinatura }}</p>
+                            <p><strong>Hash de Verificação:</strong> <span class="text-muted" style="font-size: 0.8em;">{{ termo.hash_assinatura }}</span></p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Equipamentos</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Equipamento</th>
+                                            <th>Nº de Série</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in termo.itemtermo_set.all %}
+                                        <tr>
+                                            <td>{{ item.equipamento.marca }} {{ item.equipamento.modelo }}</td>
+                                            <td>{{ item.equipamento.numero_serie }}</td>
+                                            <td>{{ item.estado_entrega }}</td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="3">Nenhum equipamento associado</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
-                    <button type="button" class="btn btn-success" id="btnAbrirModal" disabled>Assinar Termo</button>
-                </div>
-            </div>
-            {% endif %}
-            
-            {% if termo.status == 'ASSINADO' and termo.arquivo_pdf %}
-            <hr>
-            <div class="row">
-                <div class="col-12">
-                    <a href="{% url 'documents:termo_download' termo.uuid %}" class="btn btn-primary">
-                        <i class="fas fa-download"></i> Download do Termo Assinado
-                    </a>
-                </div>
-            </div>
-            {% endif %}
-            
-            <div class="row mt-3">
-                <div class="col-12">
-                    <a href="{% url 'documents:termo_list' %}" class="btn btn-secondary">Voltar para a lista</a>
+                    
+                    {% if termo.observacoes %}
+                    <div class="row">
+                        <div class="col-12">
+                            <h5>Observações</h5>
+                            <pre class="border p-3 bg-light">{{ termo.observacoes }}</pre>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -86,76 +151,124 @@
             <form method="post" action="{% url 'documents:termo_sign' termo.uuid %}" id="formAssinatura">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <p class="alert alert-info">Por favor, preencha os dados abaixo para completar a assinatura do termo.</p>
+                    <p class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Por favor, preencha os dados abaixo para completar a assinatura do termo.
+                        Estes dados serão incluídos no documento final.
+                    </p>
                     
+                    <!-- Dados Pessoais -->
+                    <h5>Dados Pessoais</h5>
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="cpf" class="form-label">CPF</label>
-                            <input type="text" class="form-control" id="cpf" name="cpf" required>
+                            <label for="cpf" class="form-label">CPF *</label>
+                            <input type="text" class="form-control" id="cpf" name="cpf" value="{{ termo.colaborador.cpf|default:'' }}" required>
+                            <div class="invalid-feedback" id="cpf-feedback">
+                                CPF inválido.
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <label for="rg" class="form-label">RG</label>
-                            <input type="text" class="form-control" id="rg" name="rg" required>
+                            <label for="rg" class="form-label">RG *</label>
+                            <input type="text" class="form-control" id="rg" name="rg" value="{{ termo.colaborador.rg|default:'' }}" required>
+                        </div>
+                    </div>
+                    
+                    <!-- Endereço -->
+                    <h5>Endereço</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="cep" class="form-label">CEP *</label>
+                            <input type="text" class="form-control" id="cep" name="cep" value="{{ termo.colaborador.cep|default:'' }}" required>
+                        </div>
+                        <div class="col-md-8">
+                            <label for="endereco" class="form-label">Endereço *</label>
+                            <input type="text" class="form-control" id="endereco" name="endereco" value="{{ termo.colaborador.endereco|default:'' }}" required>
                         </div>
                     </div>
                     
                     <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="endereco" class="form-label">Endereço</label>
-                            <input type="text" class="form-control" id="endereco" name="endereco" required>
-                        </div>
                         <div class="col-md-3">
-                            <label for="numero" class="form-label">Número</label>
-                            <input type="text" class="form-control" id="numero" name="numero" required>
+                            <label for="numero" class="form-label">Número *</label>
+                            <input type="text" class="form-control" id="numero" name="numero" value="{{ termo.colaborador.numero|default:'' }}" required>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label for="complemento" class="form-label">Complemento</label>
-                            <input type="text" class="form-control" id="complemento" name="complemento">
+                            <input type="text" class="form-control" id="complemento" name="complemento" value="{{ termo.colaborador.complemento|default:'' }}">
+                        </div>
+                        <div class="col-md-5">
+                            <label for="bairro" class="form-label">Bairro *</label>
+                            <input type="text" class="form-control" id="bairro" name="bairro" value="{{ termo.colaborador.bairro|default:'' }}" required>
                         </div>
                     </div>
                     
                     <div class="row mb-3">
-                        <div class="col-md-4">
-                            <label for="bairro" class="form-label">Bairro</label>
-                            <input type="text" class="form-control" id="bairro" name="bairro" required>
+                        <div class="col-md-8">
+                            <label for="cidade" class="form-label">Cidade *</label>
+                            <input type="text" class="form-control" id="cidade" name="cidade" value="{{ termo.colaborador.cidade|default:'' }}" required>
                         </div>
                         <div class="col-md-4">
-                            <label for="cidade" class="form-label">Cidade</label>
-                            <input type="text" class="form-control" id="cidade" name="cidade" required>
-                        </div>
-                        <div class="col-md-2">
-                            <label for="estado" class="form-label">Estado</label>
-                            <input type="text" class="form-control" id="estado" name="estado" required maxlength="2">
-                        </div>
-                        <div class="col-md-2">
-                            <label for="cep" class="form-label">CEP</label>
-                            <input type="text" class="form-control" id="cep" name="cep" required>
+                            <label for="estado" class="form-label">Estado *</label>
+                            <select class="form-select" id="estado" name="estado" required>
+                                <option value="">Selecione...</option>
+                                <option value="AC" {% if termo.colaborador.estado == 'AC' %}selected{% endif %}>Acre</option>
+                                <option value="AL" {% if termo.colaborador.estado == 'AL' %}selected{% endif %}>Alagoas</option>
+                                <option value="AP" {% if termo.colaborador.estado == 'AP' %}selected{% endif %}>Amapá</option>
+                                <option value="AM" {% if termo.colaborador.estado == 'AM' %}selected{% endif %}>Amazonas</option>
+                                <option value="BA" {% if termo.colaborador.estado == 'BA' %}selected{% endif %}>Bahia</option>
+                                <option value="CE" {% if termo.colaborador.estado == 'CE' %}selected{% endif %}>Ceará</option>
+                                <option value="DF" {% if termo.colaborador.estado == 'DF' %}selected{% endif %}>Distrito Federal</option>
+                                <option value="ES" {% if termo.colaborador.estado == 'ES' %}selected{% endif %}>Espírito Santo</option>
+                                <option value="GO" {% if termo.colaborador.estado == 'GO' %}selected{% endif %}>Goiás</option>
+                                <option value="MA" {% if termo.colaborador.estado == 'MA' %}selected{% endif %}>Maranhão</option>
+                                <option value="MT" {% if termo.colaborador.estado == 'MT' %}selected{% endif %}>Mato Grosso</option>
+                                <option value="MS" {% if termo.colaborador.estado == 'MS' %}selected{% endif %}>Mato Grosso do Sul</option>
+                                <option value="MG" {% if termo.colaborador.estado == 'MG' %}selected{% endif %}>Minas Gerais</option>
+                                <option value="PA" {% if termo.colaborador.estado == 'PA' %}selected{% endif %}>Pará</option>
+                                <option value="PB" {% if termo.colaborador.estado == 'PB' %}selected{% endif %}>Paraíba</option>
+                                <option value="PR" {% if termo.colaborador.estado == 'PR' %}selected{% endif %}>Paraná</option>
+                                <option value="PE" {% if termo.colaborador.estado == 'PE' %}selected{% endif %}>Pernambuco</option>
+                                <option value="PI" {% if termo.colaborador.estado == 'PI' %}selected{% endif %}>Piauí</option>
+                                <option value="RJ" {% if termo.colaborador.estado == 'RJ' %}selected{% endif %}>Rio de Janeiro</option>
+                                <option value="RN" {% if termo.colaborador.estado == 'RN' %}selected{% endif %}>Rio Grande do Norte</option>
+                                <option value="RS" {% if termo.colaborador.estado == 'RS' %}selected{% endif %}>Rio Grande do Sul</option>
+                                <option value="RO" {% if termo.colaborador.estado == 'RO' %}selected{% endif %}>Rondônia</option>
+                                <option value="RR" {% if termo.colaborador.estado == 'RR' %}selected{% endif %}>Roraima</option>
+                                <option value="SC" {% if termo.colaborador.estado == 'SC' %}selected{% endif %}>Santa Catarina</option>
+                                <option value="SP" {% if termo.colaborador.estado == 'SP' %}selected{% endif %}>São Paulo</option>
+                                <option value="SE" {% if termo.colaborador.estado == 'SE' %}selected{% endif %}>Sergipe</option>
+                                <option value="TO" {% if termo.colaborador.estado == 'TO' %}selected{% endif %}>Tocantins</option>
+                            </select>
                         </div>
                     </div>
                     
-                    <h5 class="mt-4">Detalhes dos Equipamentos</h5>
+                    <!-- Estado dos Equipamentos -->
+                    {% if termo.itemtermo_set.all %}
+                    <h5>Estado dos Equipamentos</h5>
                     <div class="table-responsive">
-                        <table class="table table-bordered">
+                        <table class="table table-sm">
                             <thead>
                                 <tr>
                                     <th>Equipamento</th>
-                                    <th>Nº de Série</th>
-                                    <th>Estado de Entrega</th>
+                                    <th>Estado</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for item in termo.itemtermo_set.all %}
                                 <tr>
-                                    <td>{{ item.equipamento.marca }} {{ item.equipamento.modelo }}</td>
-                                    <td>{{ item.equipamento.numero_serie }}</td>
+                                    <td>{{ item.equipamento.marca }} {{ item.equipamento.modelo }} ({{ item.equipamento.numero_serie }})</td>
                                     <td>
-                                        <input type="text" class="form-control" name="estado_{{ item.equipamento.id }}" value="{{ item.estado_entrega }}" required>
+                                        <select class="form-select form-select-sm" name="estado_{{ item.equipamento.id }}">
+                                            <option value="Novo" {% if item.estado_entrega == 'Novo' %}selected{% endif %}>Novo</option>
+                                            <option value="Usado - Bom" {% if item.estado_entrega == 'Usado - Bom' %}selected{% endif %}>Usado - Bom</option>
+                                            <option value="Usado - Regular" {% if item.estado_entrega == 'Usado - Regular' %}selected{% endif %}>Usado - Regular</option>
+                                            <option value="Usado - Ruim" {% if item.estado_entrega == 'Usado - Ruim' %}selected{% endif %}>Usado - Ruim</option>
+                                        </select>
                                     </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
+                    {% endif %}
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -165,58 +278,147 @@
         </div>
     </div>
 </div>
-
 {% endblock %}
 
-{% block extra_js %}
+{% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const concordoCheckbox = document.getElementById('concordo');
-        const btnAbrirModal = document.getElementById('btnAbrirModal');
+    // Função para ativar/desativar o botão de assinatura - Abordagem super simples
+    function atualizarBotao() {
+        const checkbox = document.getElementById('concordo');
+        const botao = document.getElementById('btnAbrirModal');
         
-        // Habilitar/desabilitar botão de assinar conforme checkbox
-        if (concordoCheckbox && btnAbrirModal) {
-            concordoCheckbox.addEventListener('change', function() {
-                btnAbrirModal.disabled = !this.checked;
-            });
+        if (checkbox && botao) {
+            botao.disabled = !checkbox.checked;
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("DOM carregado - Inicializando scripts");
+        
+        // Configurar evento do checkbox
+        const concordoCheckbox = document.getElementById('concordo');
+        if (concordoCheckbox) {
+            // Garantir estado inicial correto
+            atualizarBotao();
             
-            // Abrir modal ao clicar no botão
-            btnAbrirModal.addEventListener('click', function() {
-                const modal = new bootstrap.Modal(document.getElementById('modalDadosUsuario'));
-                modal.show();
-            });
+            // Detectar mudanças no checkbox
+            concordoCheckbox.addEventListener('change', atualizarBotao);
         }
         
-        // Máscara para CPF e CEP
+        // Validação de CPF
         const cpfInput = document.getElementById('cpf');
         if (cpfInput) {
             cpfInput.addEventListener('input', function(e) {
-                let value = e.target.value.replace(/\D/g, '');
-                if (value.length > 11) value = value.substring(0, 11);
+                let value = e.target.value;
+                value = value.replace(/\D/g, '');
                 
                 if (value.length > 9) {
-                    value = value.replace(/^(\d{3})(\d{3})(\d{3})/, '$1.$2.$3-');
+                    value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4');
                 } else if (value.length > 6) {
-                    value = value.replace(/^(\d{3})(\d{3})/, '$1.$2.');
+                    value = value.replace(/(\d{3})(\d{3})(\d{0,3})/, '$1.$2.$3');
                 } else if (value.length > 3) {
-                    value = value.replace(/^(\d{3})/, '$1.');
+                    value = value.replace(/(\d{3})(\d{0,3})/, '$1.$2');
                 }
                 
                 e.target.value = value;
+                
+                // Validação simples
+                if (value.length === 14) {
+                    let valid = validarCPF(value.replace(/\D/g, ''));
+                    if (!valid) {
+                        cpfInput.classList.add('is-invalid');
+                        document.getElementById('cpf-feedback').style.display = 'block';
+                    } else {
+                        cpfInput.classList.remove('is-invalid');
+                        document.getElementById('cpf-feedback').style.display = 'none';
+                    }
+                }
             });
         }
         
+        // Função para validar CPF
+        function validarCPF(cpf) {
+            if (cpf.length !== 11) return false;
+            
+            if (/^(\d)\1+$/.test(cpf)) return false;
+            
+            let soma = 0;
+            for (let i = 0; i < 9; i++) {
+                soma += parseInt(cpf.charAt(i)) * (10 - i);
+            }
+            
+            let resto = 11 - (soma % 11);
+            if (resto === 10 || resto === 11) resto = 0;
+            if (resto !== parseInt(cpf.charAt(9))) return false;
+            
+            soma = 0;
+            for (let i = 0; i < 10; i++) {
+                soma += parseInt(cpf.charAt(i)) * (11 - i);
+            }
+            
+            resto = 11 - (soma % 11);
+            if (resto === 10 || resto === 11) resto = 0;
+            if (resto !== parseInt(cpf.charAt(10))) return false;
+            
+            return true;
+        }
+        
+        // Busca de endereço pelo CEP
         const cepInput = document.getElementById('cep');
         if (cepInput) {
             cepInput.addEventListener('input', function(e) {
-                let value = e.target.value.replace(/\D/g, '');
-                if (value.length > 8) value = value.substring(0, 8);
+                let value = e.target.value;
+                value = value.replace(/\D/g, '');
                 
                 if (value.length > 5) {
-                    value = value.replace(/^(\d{5})(\d{3})/, '$1-$2');
+                    value = value.replace(/(\d{5})(\d{0,3})/, '$1-$2');
                 }
                 
                 e.target.value = value;
+                
+                if (value.length === 9) {
+                    buscarEnderecoPorCEP(value);
+                }
+            });
+        }
+        
+        function buscarEnderecoPorCEP(cep) {
+            cep = cep.replace(/\D/g, '');
+            
+            if (cep.length !== 8) return;
+            
+            fetch(`https://viacep.com.br/ws/${cep}/json/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.erro) {
+                        document.getElementById('endereco').value = data.logradouro;
+                        document.getElementById('bairro').value = data.bairro;
+                        document.getElementById('cidade').value = data.localidade;
+                        document.getElementById('estado').value = data.uf;
+                        // Foca no campo número após preencher o endereço
+                        document.getElementById('numero').focus();
+                    }
+                })
+                .catch(error => console.error('Erro ao buscar CEP:', error));
+        }
+        
+        // Validação do formulário antes de enviar
+        const form = document.getElementById('formAssinatura');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                let valid = true;
+                
+                // Validar CPF
+                const cpf = cpfInput.value.replace(/\D/g, '');
+                if (!validarCPF(cpf)) {
+                    cpfInput.classList.add('is-invalid');
+                    document.getElementById('cpf-feedback').style.display = 'block';
+                    valid = false;
+                }
+                
+                if (!valid) {
+                    e.preventDefault();
+                }
             });
         }
     });
