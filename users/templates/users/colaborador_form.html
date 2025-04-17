@@ -25,26 +25,16 @@
                     
                     <h5 class="mb-3">Informações de Acesso</h5>
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <div class="form-group mb-3">
                                 <label for="{{ form.username.id_for_label }}">Nome de usuário</label>
                                 <input type="text" name="{{ form.username.name }}" 
                                        class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
                                        id="{{ form.username.id_for_label }}"
                                        value="{{ form.username.value|default:'' }}">
+                                <small class="form-text text-muted">A senha será gerada automaticamente pelo sistema.</small>
                                 {% if form.username.errors %}
                                 <div class="invalid-feedback">{{ form.username.errors.0 }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group mb-3">
-                                <label for="{{ form.password.id_for_label }}">Senha</label>
-                                <input type="password" name="{{ form.password.name }}" 
-                                       class="form-control {% if form.password.errors %}is-invalid{% endif %}" 
-                                       id="{{ form.password.id_for_label }}">
-                                {% if form.password.errors %}
-                                <div class="invalid-feedback">{{ form.password.errors.0 }}</div>
                                 {% endif %}
                             </div>
                         </div>
@@ -129,93 +119,9 @@
                         </div>
                     </div>
 
-                    <h5 class="mb-3 mt-4">Endereço</h5>
-                    <div class="form-group mb-3">
-                        <label for="{{ form.endereco.id_for_label }}">Endereço</label>
-                        <input type="text" name="{{ form.endereco.name }}" 
-                               class="form-control {% if form.endereco.errors %}is-invalid{% endif %}" 
-                               id="{{ form.endereco.id_for_label }}"
-                               value="{{ form.endereco.value|default:'' }}">
-                        {% if form.endereco.errors %}
-                        <div class="invalid-feedback">{{ form.endereco.errors.0 }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-group mb-3">
-                                <label for="{{ form.numero.id_for_label }}">Número</label>
-                                <input type="text" name="{{ form.numero.name }}" 
-                                       class="form-control {% if form.numero.errors %}is-invalid{% endif %}" 
-                                       id="{{ form.numero.id_for_label }}"
-                                       value="{{ form.numero.value|default:'' }}">
-                                {% if form.numero.errors %}
-                                <div class="invalid-feedback">{{ form.numero.errors.0 }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="col-md-8">
-                            <div class="form-group mb-3">
-                                <label for="{{ form.complemento.id_for_label }}">Complemento</label>
-                                <input type="text" name="{{ form.complemento.name }}" 
-                                       class="form-control {% if form.complemento.errors %}is-invalid{% endif %}" 
-                                       id="{{ form.complemento.id_for_label }}"
-                                       value="{{ form.complemento.value|default:'' }}">
-                                {% if form.complemento.errors %}
-                                <div class="invalid-feedback">{{ form.complemento.errors.0 }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group mb-3">
-                        <label for="{{ form.bairro.id_for_label }}">Bairro</label>
-                        <input type="text" name="{{ form.bairro.name }}" 
-                               class="form-control {% if form.bairro.errors %}is-invalid{% endif %}" 
-                               id="{{ form.bairro.id_for_label }}"
-                               value="{{ form.bairro.value|default:'' }}">
-                        {% if form.bairro.errors %}
-                        <div class="invalid-feedback">{{ form.bairro.errors.0 }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-8">
-                            <div class="form-group mb-3">
-                                <label for="{{ form.cidade.id_for_label }}">Cidade</label>
-                                <input type="text" name="{{ form.cidade.name }}" 
-                                       class="form-control {% if form.cidade.errors %}is-invalid{% endif %}" 
-                                       id="{{ form.cidade.id_for_label }}"
-                                       value="{{ form.cidade.value|default:'' }}">
-                                {% if form.cidade.errors %}
-                                <div class="invalid-feedback">{{ form.cidade.errors.0 }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group mb-3">
-                                <label for="{{ form.estado.id_for_label }}">Estado</label>
-                                <input type="text" name="{{ form.estado.name }}" 
-                                       class="form-control {% if form.estado.errors %}is-invalid{% endif %}" 
-                                       id="{{ form.estado.id_for_label }}"
-                                       value="{{ form.estado.value|default:'' }}">
-                                {% if form.estado.errors %}
-                                <div class="invalid-feedback">{{ form.estado.errors.0 }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group mb-3">
-                        <label for="{{ form.cep.id_for_label }}">CEP</label>
-                        <input type="text" name="{{ form.cep.name }}" 
-                               class="form-control {% if form.cep.errors %}is-invalid{% endif %}" 
-                               id="{{ form.cep.id_for_label }}"
-                               placeholder="00000-000"
-                               value="{{ form.cep.value|default:'' }}">
-                        {% if form.cep.errors %}
-                        <div class="invalid-feedback">{{ form.cep.errors.0 }}</div>
-                        {% endif %}
+                    <!-- Observação sobre dados de endereço -->
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle"></i> Os dados de endereço serão solicitados quando o colaborador assinar o termo de responsabilidade.
                     </div>
 
                     <div class="text-end mt-4">
@@ -236,39 +142,6 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Máscara para CEP
-    const cepInput = document.getElementById('id_cep');
-    if (cepInput) {
-        cepInput.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.length > 8) value = value.slice(0, 8);
-            
-            if (value.length > 5) {
-                value = value.replace(/^(\d{5})(\d{1,3}).*/, '$1-$2');
-            }
-            
-            e.target.value = value;
-        });
-        
-        // Consulta de CEP
-        cepInput.addEventListener('blur', function() {
-            const cep = this.value.replace(/\D/g, '');
-            if (cep.length === 8) {
-                fetch(`https://viacep.com.br/ws/${cep}/json/`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (!data.erro) {
-                            document.getElementById('id_endereco').value = data.logradouro;
-                            document.getElementById('id_bairro').value = data.bairro;
-                            document.getElementById('id_cidade').value = data.localidade;
-                            document.getElementById('id_estado').value = data.uf;
-                        }
-                    })
-                    .catch(error => console.error('Erro ao buscar CEP:', error));
-            }
-        });
-    }
-    
     // Máscara para telefone
     const telefoneInput = document.getElementById('id_telefone');
     if (telefoneInput) {

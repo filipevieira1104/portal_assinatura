@@ -131,6 +131,36 @@
     </div>
 {% else %}
     <!-- Dashboard do Colaborador -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card text-bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Meus Equipamentos</h5>
+                    <p class="card-text display-6">{{ total_equipamentos }}</p>
+                    <small>Equipamentos registrados em seu nome</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Pendentes de Assinatura</h5>
+                    <p class="card-text display-6">{{ termos_pendentes.count }}</p>
+                    <small>Termos aguardando sua assinatura</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Termos Assinados</h5>
+                    <p class="card-text display-6">{{ termos_assinados.count }}</p>
+                    <small>Total de documentos já assinados</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-4">
         <div class="col-md-6">
             <div class="card">
@@ -152,11 +182,12 @@
                                             {{ item.equipamento.tipo }} {{ item.equipamento.marca }}{% if not forloop.last %}, {% endif %}
                                         {% endfor %}
                                     </p>
+                                    <button class="btn btn-sm btn-success mt-2">Assinar Agora</button>
                                 </a>
                             {% endfor %}
                         </div>
                     {% else %}
-                        <p class="text-center mb-0">Você não tem termos pendentes.</p>
+                        <p class="text-center mb-0">Você não tem termos pendentes de assinatura.</p>
                     {% endif %}
                 </div>
             </div>
@@ -176,6 +207,7 @@
                                         <th>Tipo</th>
                                         <th>Marca/Modelo</th>
                                         <th>Número de Série</th>
+                                        <th>Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -184,6 +216,11 @@
                                             <td>{{ equipamento.get_tipo_display }}</td>
                                             <td>{{ equipamento.marca }} {{ equipamento.modelo }}</td>
                                             <td>{{ equipamento.numero_serie }}</td>
+                                            <td>
+                                                <span class="badge {% if equipamento.status == 'DISPONIVEL' %}bg-success{% elif equipamento.status == 'EM_USO' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                                    {{ equipamento.get_status_display }}
+                                                </span>
+                                            </td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>

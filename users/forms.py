@@ -35,19 +35,6 @@ class UserRegisterForm(UserCreationForm):
 class ColaboradorAdminForm(forms.ModelForm):
     """Formulário para administradores criarem novos colaboradores"""
     
-    password1 = forms.CharField(
-        label='Senha', 
-        widget=forms.PasswordInput,
-        required=False,
-        help_text="Deixe em branco para gerar uma senha aleatória."
-    )
-    password2 = forms.CharField(
-        label='Confirmação de senha', 
-        widget=forms.PasswordInput,
-        required=False,
-        help_text="Digite a mesma senha novamente para verificação."
-    )
-    
     # Campo para exibir a senha gerada (não é salvo no modelo)
     generated_password = forms.CharField(
         label='Senha gerada',
@@ -60,9 +47,7 @@ class ColaboradorAdminForm(forms.ModelForm):
         model = User
         fields = [
             'username', 'email', 'first_name', 'last_name',
-            'telefone', 'cargo', 'departamento', 
-            'endereco', 'numero', 'complemento', 'bairro', 
-            'cidade', 'estado', 'cep', 'is_staff'
+            'telefone', 'cargo', 'departamento', 'is_staff'
         ]
         
     def __init__(self, *args, **kwargs):
@@ -77,28 +62,9 @@ class ColaboradorAdminForm(forms.ModelForm):
         
         # Adicionar placeholders
         self.fields['telefone'].widget.attrs.update({'placeholder': '(00) 00000-0000'})
-        self.fields['cep'].widget.attrs.update({'placeholder': '00000-000'})
         
         # Esconder o campo de senha gerada até que seja necessário
         self.fields['generated_password'].widget.attrs.update({'style': 'display: none;'})
-        
-    def clean_password2(self):
-        password1 = self.cleaned_data.get('password1')
-        password2 = self.cleaned_data.get('password2')
-        
-        # Se ambos estiverem vazios, gerar senha aleatória
-        if not password1 and not password2:
-            # Gerar senha aleatória
-            random_password = uuid.uuid4().hex[:8]
-            # Armazenar no campo virtual para exibição
-            self.instance.random_password = random_password
-            return ''
-            
-        # Verificar se as senhas coincidem
-        if password1 and password2 and password1 != password2:
-            raise forms.ValidationError('As senhas não conferem.')
-            
-        return password2
         
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -124,13 +90,12 @@ class ColaboradorAdminForm(forms.ModelForm):
                 
             user.username = username
             
-        # Definir senha
-        password = self.cleaned_data.get('password1')
-        if password:
-            user.set_password(password)
-        elif hasattr(self.instance, 'random_password'):
-            # Usar a senha aleatória gerada
-            user.set_password(self.instance.random_password)
+        # Gerar senha aleatória
+        random_password = uuid.uuid4().hex[:8]
+        # Armazenar no campo virtual para exibição
+        self.instance.random_password = random_password
+        # Definir a senha aleatória
+        user.set_password(random_password)
             
         if commit:
             user.save()
