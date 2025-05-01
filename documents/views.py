@@ -11,6 +11,7 @@ from django.contrib import messages
 from django.core.files.base import ContentFile
 import os
 import hashlib
+import pythoncom
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -19,7 +20,7 @@ from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
 from reportlab.lib import colors
 from bs4 import BeautifulSoup
 from .models import Equipamento, DocumentoModelo, TermoResponsabilidade, ItemTermo
-from users.views import StaffRequiredMixin
+
 from .forms import ModeloDocumentoForm
 from django.urls import reverse_lazy
 from reportlab.pdfgen import canvas
@@ -57,7 +58,7 @@ class EquipamentoDetailView(LoginRequiredMixin, DetailView):
     template_name = 'documents/equipamento_detail.html'
     context_object_name = 'equipamento'
 
-class EquipamentoCreateView(StaffRequiredMixin, CreateView):
+class EquipamentoCreateView(LoginRequiredMixin, CreateView):
     model = Equipamento
     template_name = 'documents/equipamento_form.html'
     fields = ['tipo', 'marca', 'modelo', 'numero_serie', 'descricao',
@@ -66,7 +67,7 @@ class EquipamentoCreateView(StaffRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse_lazy('documents:equipamento_list')
 
-class EquipamentoUpdateView(StaffRequiredMixin, UpdateView):
+class EquipamentoUpdateView(UserPassesTestMixin, UpdateView):
     model = Equipamento
     template_name = 'documents/equipamento_form.html'
     fields = ['tipo', 'marca', 'modelo', 'numero_serie', 'descricao',
@@ -74,19 +75,28 @@ class EquipamentoUpdateView(StaffRequiredMixin, UpdateView):
 
     def get_success_url(self):
         return reverse_lazy('documents:equipamento_list')
+
+    def test_func(self):
+        return self.request.user.is_staff
 
 # Views de Documento Modelo
-class DocumentoModeloListView(StaffRequiredMixin, ListView):
+class DocumentoModeloListView(UserPassesTestMixin, ListView):
     model = DocumentoModelo
     template_name = 'documents/modelo_list.html'
     context_object_name = 'modelos'
 
-class DocumentoModeloDetailView(StaffRequiredMixin, DetailView):
+    def test_func(self):
+        return self.request.user.is_staff
+
+class DocumentoModeloDetailView(UserPassesTestMixin, DetailView):
     model = DocumentoModelo
     template_name = 'documents/modelo_detail.html'
     context_object_name = 'modelo'
 
-class DocumentoModeloCreateView(StaffRequiredMixin, CreateView):
+    def test_func(self):
+        return self.request.user.is_staff
+
+class DocumentoModeloCreateView(UserPassesTestMixin, CreateView):
     model = DocumentoModelo
     form_class = ModeloDocumentoForm  # Use o form customizado
     template_name = 'documents/modelo_form.html'
@@ -94,13 +104,19 @@ class DocumentoModeloCreateView(StaffRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse_lazy('documents:modelo_list')
 
-class DocumentoModeloUpdateView(StaffRequiredMixin, UpdateView):
+    def test_func(self):
+        return self.request.user.is_staff
+
+class DocumentoModeloUpdateView(UserPassesTestMixin, UpdateView):
     model = DocumentoModelo
     form_class = ModeloDocumentoForm  # Use o form customizado
     template_name = 'documents/modelo_form.html'
     
     def get_success_url(self):
         return reverse_lazy('documents:modelo_detail', kwargs={'pk': self.object.pk})
+
+    def test_func(self):
+        return self.request.user.is_staff
 
 # Views de Termo de Responsabilidade
 class TermoListView(LoginRequiredMixin, ListView):
@@ -141,11 +157,14 @@ class TermoDetailView(LoginRequiredMixin, DetailView):
         
         return context
 
-class TermoCreateView(StaffRequiredMixin, CreateView):
+class TermoCreateView(UserPassesTestMixin, CreateView):
     model = TermoResponsabilidade
     template_name = 'documents/termo_form.html'
     fields = ['colaborador', 'modelo', 'equipamentos', 'observacoes']
     success_url = reverse_lazy('documents:termo_list')  # Redireciona para a lista de termos
+    
+    def test_func(self):
+        return self.request.user.is_staff
     
     def form_valid(self, form):
         form.instance.status = 'PENDENTE'
@@ -366,7 +385,7 @@ class TermoSignView(LoginRequiredMixin, View):
             if not os.path.exists(termo.modelo.arquivo_word.path):
                 logger.error(f"Arquivo Word não encontrado: {termo.modelo.arquivo_word.path}")
                 raise Exception(f"Arquivo do modelo não encontrado: {termo.modelo.arquivo_word.path}")
-                
+            
             try:
                 # Criar um arquivo temporário para trabalhar com o Word
                 with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as temp_docx:
@@ -436,7 +455,12 @@ class TermoSignView(LoginRequiredMixin, View):
                 doc.save(temp_docx_path)
                 
                 # Converter o arquivo docx para PDF
-                docx2pdf_convert(temp_docx_path, pdf_path)
+                try:
+                    pythoncom.CoInitialize()
+                    docx2pdf_convert(temp_docx_path, pdf_path)
+                    pythoncom.CoUninitialize()
+                except ImportError:
+                    docx2pdf_convert(temp_docx_path, pdf_path)
                 
                 # Limpar o arquivo temporário
                 os.unlink(temp_docx_path)
@@ -450,90 +474,10 @@ class TermoSignView(LoginRequiredMixin, View):
             except Exception as e:
                 # Se ocorrer um erro, voltar para o método padrão de geração de PDF
                 logger.error(f"Erro ao converter Word para PDF: {str(e)}")
-        
-        # Se não tiver arquivo Word ou ocorrer erro, usar a abordagem HTML
-        # Busca dados do termo
-        user = termo.colaborador
-        itens_termo = ItemTermo.objects.filter(termo=termo)
-        equipamentos = [item.equipamento for item in itens_termo]
-        
-        # Informações do colaborador
-        nome_completo = f"{user.first_name} {user.last_name}"
-        
-        # Obter o endereço completo
-        endereco_completo = f"{user.endereco}, {user.numero}"
-        if user.complemento:
-            endereco_completo += f", {user.complemento}"
-        endereco_completo += f", {user.bairro}, {user.cidade}/{user.estado}, CEP: {user.cep}"
-        
-        # Detalhes dos equipamentos
-        lista_equipamentos = []
-        total_valor = 0
-        for i, equip in enumerate(equipamentos):
-            item = itens_termo[i]
-            lista_equipamentos.append({
-                'numero': i + 1,
-                'tipo': equip.tipo,
-                'marca': equip.marca,
-                'modelo': equip.modelo,
-                'numero_serie': equip.numero_serie,
-                'descricao': f"{equip.tipo} {equip.marca} {equip.modelo} - {equip.numero_serie}",
-                'estado': item.estado_entrega,
-                'valor': equip.valor,
-                'valor_formatado': f"R$ {equip.valor:.2f}".replace('.', ',')
-            })
-            total_valor += equip.valor
-        
-        # Data de assinatura formatada
-        data_assinatura = termo.data_assinatura.strftime("%d/%m/%Y") if termo.data_assinatura else ""
-        
-        # Conteúdo do termo (texto limpo)
-        conteudo_termo = ""
-        if termo.modelo and termo.modelo.conteudo:
-            soup = BeautifulSoup(termo.modelo.conteudo, 'html.parser')
-            conteudo_termo = soup.get_text('\n\n')
-        
-        # Usar template HTML para gerar o PDF
-        context = {
-            'titulo': "TERMO DE RESPONSABILIDADE",
-            'nome_colaborador': nome_completo,
-            'cpf': user.cpf,
-            'rg': user.rg,
-            'endereco': user.endereco,
-            'numero': user.numero,
-            'complemento': user.complemento,
-            'bairro': user.bairro,
-            'cidade': user.cidade,
-            'estado': user.estado,
-            'cep': user.cep,
-            'endereco_completo': endereco_completo,
-            'equipamentos': lista_equipamentos,
-            'total_valor': total_valor,
-            'total_valor_formatado': f"R$ {total_valor:.2f}".replace('.', ','),
-            'conteudo_termo': conteudo_termo,
-            'data_assinatura': data_assinatura,
-            'ip_assinatura': termo.ip_assinatura,
-            'dispositivo_assinatura': user_agent,
-            'hash_assinatura': termo.hash_assinatura
-        }
-        
-        # Renderizar o template HTML
-        template = get_template('documents/termo_pdf_template.html')
-        html = template.render(context)
-        
-        # Converter HTML para PDF
-        with open(pdf_path, 'wb') as pdf_file:
-            pisa_status = pisa.CreatePDF(html, dest=pdf_file)
-            
-        # Verificar se a conversão foi bem-sucedida
-        if pisa_status.err:
-            raise Exception("Erro ao gerar o PDF")
-            
-        # Atualizar o termo com o caminho do PDF apenas se não for uma prévia
-        if not custom_path:
-            termo.arquivo_pdf.save(file_name, ContentFile(open(pdf_path, 'rb').read()), save=True)
-        
-        return pdf_path
+        else:
+            # Se não houver arquivo Word, lançar erro e não permitir geração do termo
+            logger.error("O modelo de documento não possui um arquivo Word associado. Não é possível gerar o termo.")
+            raise Exception("O modelo de documento não possui um arquivo Word associado. Não é possível gerar o termo.")
 
 class TermoDownloadView(LoginRequiredMixin, View):
     def get(self, request, uuid):

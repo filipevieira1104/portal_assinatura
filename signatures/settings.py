@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -180,4 +181,27 @@ TINYMCE_DEFAULT_CONFIG = {
     'branding': False,  # Remove o logo do TinyMCE
     'relative_urls': False,
     'convert_urls': False,
+}
+
+# Configuração de logging para desenvolvimento
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'stream': sys.stdout,
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',  # Use 'DEBUG' para mais detalhes
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
 }

@@ -3,6 +3,7 @@ from django.conf import settings
 from django.utils import timezone
 import uuid
 from tinymce.models import HTMLField
+import os
 
 class Equipamento(models.Model):
     TIPO_CHOICES = [
@@ -61,6 +62,16 @@ class DocumentoModelo(models.Model):
         
     def __str__(self):
         return f"{self.titulo} - v{self.versao}"
+
+    def save(self, *args, **kwargs):
+        try:
+            old = DocumentoModelo.objects.get(pk=self.pk)
+            if old.arquivo_word and self.arquivo_word != old.arquivo_word:
+                if os.path.isfile(old.arquivo_word.path):
+                    os.remove(old.arquivo_word.path)
+        except DocumentoModelo.DoesNotExist:
+            pass
+        super().save(*args, **kwargs)
 
 class TermoResponsabilidade(models.Model):
     class Status(models.TextChoices):
